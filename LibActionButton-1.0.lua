@@ -411,7 +411,7 @@ end
 --- Action Button
 
 function ActionButton:IsEmpty()
-	return HasAction(self._state_action)
+	return not HasAction(self._state_action)
 end
 
 function ActionButton:GetActionText()
