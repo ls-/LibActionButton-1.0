@@ -37,39 +37,39 @@ if not lib then return end
 
 local CBH = LibStub("CallbackHandler-1.0")
 
-local GenericButton = CreateFrame("CheckButton")
-local GenericButton_MT = {__index = GenericButton}
+local Generic = CreateFrame("CheckButton")
+local Generic_MT = {__index = Generic}
 
-local ActionButton = setmetatable({}, {__index = GenericButton})
-local ActionButton_MT = {__index = ActionButton}
+local Action = setmetatable({}, {__index = Generic})
+local Action_MT = {__index = Action}
 
-local PetActionButton = setmetatable({}, {__index = GenericButton})
-local PetActionButton_MT = {__index = PetActionButton}
+local PetAction = setmetatable({}, {__index = Generic})
+local PetAction_MT = {__index = PetAction}
 
-local SpellButton = setmetatable({}, {__index = GenericButton})
-local SpellButton_MT = {__index = SpellButton}
+local Spell = setmetatable({}, {__index = Generic})
+local Spell_MT = {__index = Spell}
 
-local ItemButton = setmetatable({}, {__index = GenericButton})
-local ItemButton_MT = {__index = ItemButton}
+local Item = setmetatable({}, {__index = Generic})
+local Item_MT = {__index = Item}
 
-local MacroButton = setmetatable({}, {__index = GenericButton})
-local MacroButton_MT = {__index = MacroButton}
+local Macro = setmetatable({}, {__index = Generic})
+local Macro_MT = {__index = Macro}
 
 local state_meta_map = {
-	empty  = GenericButton_MT,
-	action = ActionButton_MT,
-	pet    = PetActionButton_MT,
-	spell  = SpellButton_MT,
-	item   = ItemButton_MT,
-	macro  = MacroButton_MT
+	empty  = Generic_MT,
+	action = Action_MT,
+	pet    = PetAction_MT,
+	spell  = Spell_MT,
+	item   = Item_MT,
+	macro  = Macro_MT
 }
 
 local Update, UpdateButtonState, UpdateUsable, UpdateCount, UpdateCooldown, UpdateTooltip
 local StartFlash, StopFlash, UpdateFlash, UpdateHotkeys
 
 --- Create a new action button.
--- @param id Internal id of the button (not used by LibActionBar-1.0, only for tracking inside the calling addon)
--- @param name Name of the button frame to be created (not used by LibActionBar-1.0 aside from naming the frame)
+-- @param id Internal id of the button (not used by LibActionButton-1.0, only for tracking inside the calling addon)
+-- @param name Name of the button frame to be created (not used by LibActionButton-1.0 aside from naming the frame)
 -- @param header Header that drives these action buttons (if any)
 function lib:CreateButton(id, name, header)
 	if type(name) ~= "string" then
@@ -79,7 +79,7 @@ function lib:CreateButton(id, name, header)
 		error("Usage: CreateButton(id, name, header): Buttons without a secure header are not yet supported!", 2)
 	end
 
-	local button = setmetatable(CreateFrame("CheckButton", name, UIParent, "SecureActionButtonTemplate, ActionButtonTemplate"), GenericButton_MT)
+	local button = setmetatable(CreateFrame("CheckButton", name, UIParent, "SecureActionButtonTemplate, ActionButtonTemplate"), Generic_MT)
 
 	button.id = id
 	button.header = header
@@ -115,7 +115,7 @@ function lib:CreateButton(id, name, header)
 	]])
 
 	-- register for attribute changes
-	button:SetScript("OnAttributeChanged", GenericButton.OnAttributeChanged)
+	button:SetScript("OnAttributeChanged", Generic.OnAttributeChanged)
 
 	button.icon               = _G[name .. "Icon"]
 	button.flash              = _G[name .. "Flash"]
@@ -127,6 +127,7 @@ function lib:CreateButton(id, name, header)
 	button.actionName         = _G[name .. "Name"]
 	button.border             = _G[name .. "Border"]
 	button.cooldown           = _G[name .. "Cooldown"]
+	button.normalTexture      = _G[name .. "NormalTexture"]
 
 	return button
 end
@@ -134,13 +135,13 @@ end
 -----------------------------------------------------------
 --- state management
 
-function GenericButton:OnAttributeChanged(attr, value)
+function Generic:OnAttributeChanged(attr, value)
 	if attr == "state" then
 		self:UpdateAction()
 	end
 end
 
-function GenericButton:ClearStates()
+function Generic:ClearStates()
 	for state in pairs(self.state_types) do
 		self:SetAttribute(format("type-%d", state), nil)
 		self:SetAttribute(format("action-%d", state), nil)
@@ -149,7 +150,7 @@ function GenericButton:ClearStates()
 	wipe(self.state_actions)
 end
 
-function GenericButton:SetState(state, type, action)
+function Generic:SetState(state, type, action)
 	state = tonumber(state)
 	if state ~= 1 and not self.header then
 		error("SetStateAction: state ~= 1 requires a secure header!", 2)
@@ -159,7 +160,7 @@ function GenericButton:SetState(state, type, action)
 	self:UpdateState(state)
 end
 
-function GenericButton:UpdateState(state)
+function Generic:UpdateState(state)
 	state = tonumber(state)
 	self:SetAttribute(format("type-%d", state), self.state_types[state])
 	self:SetAttribute(format("action-%d", state), self.state_actions[state])
@@ -176,13 +177,13 @@ function GenericButton:UpdateState(state)
 	self:UpdateAction()
 end
 
-function GenericButton:GetAction(state)
+function Generic:GetAction(state)
 	if not state then state = self:GetAttribute("state") end
 	state = tonumber(state)
 	return self.state_types[state], self.state_actions[state]
 end
 
-function GenericButton:UpdateAllStates()
+function Generic:UpdateAllStates()
 	for state in pairs(self.state_types) do
 		self:UpdateState(state)
 	end
@@ -191,12 +192,16 @@ end
 -----------------------------------------------------------
 --- button management
 
-function GenericButton:UpdateAction(force)
+function Generic:UpdateAction(force)
 	local type, action = self:GetAction()
 	if force or type ~= self._state_type or action ~= self._state_action then
-		self._state_type, self._state_action = type, action
-		local meta = state_meta_map[self._state_type] or state_meta_map["empty"]
-		setmetatable(self, meta)
+		-- type changed, update the metatable
+		if self._state_type ~= type then
+			local meta = state_meta_map[type] or state_meta_map["empty"]
+			setmetatable(self, meta)
+			self._state_type = type
+		end
+		self._state_action = action
 		Update(self)
 	end
 end
@@ -259,12 +264,12 @@ function Update(self)
 	end
 end
 
-function GenericButton:UpdateLocal()
+function Generic:UpdateLocal()
 -- dummy function the other button types can override for special updating
 end
 
 function UpdateButtonState(self)
-	if self:IsCurrent() or self:IsAutoRepeat() then
+	if self:IsCurrentlyActive() or self:IsAutoRepeat() then
 		self:SetChecked(1)
 	else
 		self:SetChecked(0)
@@ -354,110 +359,33 @@ end
 
 -----------------------------------------------------------
 --- WoW API mapping
-
-function GenericButton:IsEmpty()
-	return true
-end
-
-function GenericButton:GetActionText()
-	return ""
-end
-
-function GenericButton:GetTexture()
-	return nil
-end
-
-function GenericButton:GetCount()
-	return 0
-end
-
-function GenericButton:GetCooldown()
-	return 0
-end
-
-function GenericButton:IsAttack()
-	return false
-end
-
-function GenericButton:IsEquipped()
-	return false
-end
-
-function GenericButton:IsCurrentlyActive()
-	return false
-end
-
-function GenericButton:IsAutoRepeat()
-	return false
-end
-
-function GenericButton:IsUsable()
-	return true, false
-end
-
-function GenericButton:IsConsumableOrStackable()
-	return false
-end
-
-function GenericButton:IsInRange()
-	return true
-end
-
-function GenericButton:SetTooltip()
-	return false
-end
+--- Generic Button
+Generic.IsEmpty                 = function(self) return true end
+Generic.GetActionText           = function(self) return "" end
+Generic.GetTexture              = function(self) return nil end
+Generic.GetCount                = function(self) return 0 end
+Generic.GetCooldown             = function(self) return nil end
+Generic.IsAttack                = function(self) return nil end
+Generic.IsEquipped              = function(self) return nil end
+Generic.IsCurrentlyActive       = function(self) return nil end
+Generic.IsAutoRepeat            = function(self) return nil end
+Generic.IsUsable                = function(self) return nil end
+Generic.IsConsumableOrStackable = function(self) return nil end
+Generic.IsInRange               = function(self) return nil end
+Generic.SetTooltip              = function(self) return nil end
 
 -----------------------------------------------------------
 --- Action Button
-
-function ActionButton:IsEmpty()
-	return not HasAction(self._state_action)
-end
-
-function ActionButton:GetActionText()
-	return GetActionText(self._state_action)
-end
-
-function ActionButton:GetTexture()
-	return GetActionTexture(self._state_action)
-end
-
-function ActionButton:GetCount()
-	return GetActionCount(self._state_action)
-end
-
-function ActionButton:GetCooldown()
-	return GetActionCooldown(self._state_action)
-end
-
-function ActionButton:IsAttack()
-	return IsAttackAction(self._state_action)
-end
-
-function ActionButton:IsEquipped()
-	return IsEquippedAction(self._state_action)
-end
-
-function ActionButton:IsCurrentlyActive()
-	return IsCurrentAction(self._state_action)
-end
-
-function ActionButton:IsAutoRepeat()
-	return IsAutoRepeatAction(self._state_action)
-end
-
-function ActionButton:IsUsable()
-	return IsUsableAction(self._state_action)
-end
-
-function ActionButton:IsConsumableOrStackable()
-	return IsConsumableAction(self._state_action) or IsStackableAction(self._state_action)
-end
-
-function ActionButton:IsInRange()
-	return IsActionInRange(self._state_action)
-end
-
-function ActionButton:SetTooltip()
-	return GameTooltip:SetAction(self._state_action)
-end
+Action.IsEmpty                 = function(self) return not HasAction(self._state_action) end
+Action.GetActionText           = function(self) return GetActionText(self._state_action) end
+Action.GetTexture              = function(self) return GetActionTexture(self._state_action) end
+Action.GetCount                = function(self) return GetActionCount(self._state_action) end
+Action.GetCooldown             = function(self) return GetActionCooldown(self._state_action) end
+Action.IsAttack                = function(self) return IsAttackAction(self._state_action) end
+Action.IsEquipped              = function(self) return IsEquippedAction(self._state_action) end
+Action.IsCurrentlyActive       = function(self) return IsCurrentAction(self._state_action) end
+Action.IsAutoRepeat            = function(self) return IsAutoRepeatAction(self._state_action) end
+Action.IsUsable                = function(self) return IsUsableAction(self._state_action) end
+Action.IsConsumableOrStackable = function(self) return IsConsumableAction(self._state_action) or IsStackableAction(self._state_action) end
+Action.IsInRange               = function(self) return IsActionInRange(self._state_action) end
+Action.SetTooltip              = function(self) return GameTooltip:SetAction(self._state_action) end
