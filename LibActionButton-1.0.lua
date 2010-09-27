@@ -40,7 +40,31 @@ local CBH = LibStub("CallbackHandler-1.0")
 local GenericButton = CreateFrame("CheckButton")
 local GenericButton_MT = {__index = GenericButton}
 
-local UpdateButtonState, UpdateUsable, UpdateCount, UpdateCooldown, UpdateTooltip
+local ActionButton = setmetatable({}, {__index = GenericButton})
+local ActionButton_MT = {__index = ActionButton}
+
+local PetActionButton = setmetatable({}, {__index = GenericButton})
+local PetActionButton_MT = {__index = PetActionButton}
+
+local SpellButton = setmetatable({}, {__index = GenericButton})
+local SpellButton_MT = {__index = SpellButton}
+
+local ItemButton = setmetatable({}, {__index = GenericButton})
+local ItemButton_MT = {__index = ItemButton}
+
+local MacroButton = setmetatable({}, {__index = GenericButton})
+local MacroButton_MT = {__index = MacroButton}
+
+local state_meta_map = {
+	empty  = GenericButton_MT,
+	action = ActionButton_MT,
+	pet    = PetActionButton_MT,
+	spell  = SpellButton_MT,
+	item   = ItemButton_MT,
+	macro  = MacroButton_MT
+}
+
+local Update, UpdateButtonState, UpdateUsable, UpdateCount, UpdateCooldown, UpdateTooltip
 local StartFlash, StopFlash, UpdateFlash, UpdateHotkeys
 
 --- Create a new action button.
@@ -91,7 +115,7 @@ function lib:CreateButton(id, name, header)
 	]])
 
 	-- register for attribute changes
-	button:SetScript("OnAttributeChanged", button.OnAttributeChanged)
+	button:SetScript("OnAttributeChanged", GenericButton.OnAttributeChanged)
 
 	button.icon               = _G[name .. "Icon"]
 	button.flash              = _G[name .. "Flash"]
@@ -112,7 +136,7 @@ end
 
 function GenericButton:OnAttributeChanged(attr, value)
 	if attr == "state" then
-		self:Update()
+		self:UpdateAction()
 	end
 end
 
@@ -171,11 +195,13 @@ function GenericButton:UpdateAction(force)
 	local type, action = self:GetAction()
 	if force or type ~= self._state_type or action ~= self._state_action then
 		self._state_type, self._state_action = type, action
-		self:Update()
+		local meta = state_meta_map[self._state_type] or state_meta_map["empty"]
+		setmetatable(self, meta)
+		Update(self)
 	end
 end
 
-function GenericButton:Update()
+function Update(self)
 	if not self:IsEmpty() then
 	-- TODO: Show button
 		UpdateButtonState(self)
@@ -379,4 +405,59 @@ end
 
 function GenericButton:SetTooltip()
 	return false
+end
+
+-----------------------------------------------------------
+--- Action Button
+
+function ActionButton:IsEmpty()
+	return HasAction(self._state_action)
+end
+
+function ActionButton:GetActionText()
+	return GetActionText(self._state_action)
+end
+
+function ActionButton:GetTexture()
+	return GetActionTexture(self._state_action)
+end
+
+function ActionButton:GetCount()
+	return GetActionCount(self._state_action)
+end
+
+function ActionButton:GetCooldown()
+	return GetActionCooldown(self._state_action)
+end
+
+function ActionButton:IsAttack()
+	return IsAttackAction(self._state_action)
+end
+
+function ActionButton:IsEquipped()
+	return IsEquippedAction(self._state_action)
+end
+
+function ActionButton:IsCurrentlyActive()
+	return IsCurrentAction(self._state_action)
+end
+
+function ActionButton:IsAutoRepeat()
+	return IsAutoRepeatAction(self._state_action)
+end
+
+function ActionButton:IsUsable()
+	return IsUsableAction(self._state_action)
+end
+
+function ActionButton:IsConsumableOrStackable()
+	return IsConsumableAction(self._state_action) or IsStackableAction(self._state_action)
+end
+
+function ActionButton:IsInRange()
+	return IsActionInRange(self._state_action)
+end
+
+function ActionButton:SetTooltip()
+	return GameTooltip:SetAction(self._state_action)
 end
