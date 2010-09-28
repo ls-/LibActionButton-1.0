@@ -83,6 +83,9 @@ function lib:CreateButton(id, name, header)
 	button:RegisterForDrag("LeftButton", "RightButton")
 	button:RegisterForClicks("AnyUp")
 
+	button:SetScript("OnEnter", Generic.OnEnter)
+	button:SetScript("OnLeave", Generic.OnLeave)
+
 	button.id = id
 	button.header = header
 	-- Mapping of state -> action
@@ -288,6 +291,17 @@ function Generic:ButtonContentsChanged(state, kind, value)
 end
 
 -----------------------------------------------------------
+--- frame scripts
+
+function Generic:OnEnter()
+	UpdateTooltip(self)
+end
+
+function Generic:OnLeave()
+	GameTooltip:Hide()
+end
+
+-----------------------------------------------------------
 --- button management
 
 function Generic:UpdateAction(force)
@@ -358,7 +372,7 @@ function Update(self)
 	-- TODO: Update Overlay Glow
 
 	if GameTooltip:GetOwner() == self then
-		UpdateTooltip()
+		UpdateTooltip(self)
 	end
 end
 
