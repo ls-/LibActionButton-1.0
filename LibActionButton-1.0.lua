@@ -129,7 +129,7 @@ function lib:CreateButton(id, name, header)
 			return actionType, value
 		-- we need to return the spellbook id for spells
 		elseif kind == "spell" then
-			return kind, FindSpellBookSlotBySpellID(value)
+			return kind, FindSpellBookSlotBySpellID(value), "spell"
 		else
 			print("LibActionButton-1.0: Unknown type: " .. tostring(kind))
 			return false
@@ -506,17 +506,16 @@ Action.SetTooltip              = function(self) return GameTooltip:SetAction(sel
 
 -----------------------------------------------------------
 --- Spell Button
--- TODO: Validate those functions work with spell id or spellbook id in 4.0
 Spell.HasAction               = function(self) return true end
 Spell.GetActionText           = function(self) return "" end
 Spell.GetTexture              = function(self) return GetSpellTexture(self._state_action) end
 Spell.GetCount                = function(self) return GetSpellCount(self._state_action) end
 Spell.GetCooldown             = function(self) return GetSpellCooldown(self._state_action) end
-Spell.IsAttack                = function(self) return IsAttackSpell(self._state_action) end
+Spell.IsAttack                = function(self) return IsAttackSpell(FindSpellBookSlotBySpellID(self._state_action), "spell") end -- needs spell book id as of 4.0.1.13066
 Spell.IsEquipped              = function(self) return false end
 Spell.IsCurrentlyActive       = function(self) return IsCurrentSpell(self._state_action) end
-Spell.IsAutoRepeat            = function(self) return IsAutoRepeatSpell(self._state_action) end
+Spell.IsAutoRepeat            = function(self) return IsAutoRepeatSpell(FindSpellBookSlotBySpellID(self._state_action), "spell") end -- needs spell book id as of 4.0.1.13066
 Spell.IsUsable                = function(self) return IsUsableSpell(self._state_action) end
 Spell.IsConsumableOrStackable = function(self) return IsConsumableSpell(self._state_action) end
-Spell.IsInRange               = function(self) return IsSpellInRange(self._state_action, "target") end
+Spell.IsInRange               = function(self) return IsSpellInRange(FindSpellBookSlotBySpellID(self._state_action), "spell", "target") end -- needs spell book id as of 4.0.1.13066
 Spell.SetTooltip              = function(self) return GameTooltip:SetSpellByID(self._state_action) end
