@@ -87,6 +87,7 @@ function lib:CreateButton(id, name, header)
 	button:RegisterForDrag("LeftButton", "RightButton")
 	button:RegisterForClicks("AnyUp")
 
+	-- Frame Scripts
 	button:SetScript("OnEnter", Generic.OnEnter)
 	button:SetScript("OnLeave", Generic.OnLeave)
 	button:SetScript("PostClick", Generic.PostClick)
@@ -213,6 +214,7 @@ function lib:CreateButton(id, name, header)
 		return self:RunAttribute("PickupButton", buttonType, buttonAction)
 	]])
 
+	-- Store all sub frames on the button object for easier access
 	button.icon               = _G[name .. "Icon"]
 	button.flash              = _G[name .. "Flash"]
 	button.flyoutBorder       = _G[name .. "FlyoutBorder"]
@@ -225,10 +227,16 @@ function lib:CreateButton(id, name, header)
 	button.cooldown           = _G[name .. "Cooldown"]
 	button.normalTexture      = _G[name .. "NormalTexture"]
 
+	-- Store the button in the registry, needed for event and OnUpdate handling
 	if not next(ButtonRegistry) then
 		InitializeEventHandler()
 	end
 	ButtonRegistry[button] = true
+
+	-- run an initial update
+	UpdateAction(button)
+	UpdateHotkeys(button)
+
 	return button
 end
 
