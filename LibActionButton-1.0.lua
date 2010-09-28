@@ -80,6 +80,8 @@ function lib:CreateButton(id, name, header)
 	end
 
 	local button = setmetatable(CreateFrame("CheckButton", name, UIParent, "SecureActionButtonTemplate, ActionButtonTemplate"), Generic_MT)
+	button:RegisterForDrag("LeftButton", "RightButton")
+	button:RegisterForClicks("AnyUp")
 
 	button.id = id
 	button.header = header
@@ -95,7 +97,8 @@ function lib:CreateButton(id, name, header)
 	button:SetAttribute("UpdateState", [[
 		-- note that GetAttribute("state") is not guaranteed to return the current state in this method!
 		local state = ...
-		local type, action = self:GetAttribute(format("type-%d", state)), self:GetAttribute(format("action-%d", state))
+		self:SetAttribute("state", state)
+		local type, action = (self:GetAttribute(format("type-%d", state)) or "empty"), self:GetAttribute(format("action-%d", state))
 		print(state, type, action)
 
 		self:SetAttribute("type", type)
@@ -104,19 +107,17 @@ function lib:CreateButton(id, name, header)
 			self:SetAttribute(action_field, action)
 			self:SetAttribute("action_field", action_field)
 		end
+
+		-- when called from the OnDrag scripts, the button will still hold the old action
+		-- however, the ACTIONBAR_SLOT_CHANGED event will fire after the change, and cause an update anyway
+		self:CallMethod("UpdateAction")
 	]])
 
 	-- this function is invoked by the header when the state changes
 	button:SetAttribute("_childupdate-state", [[
-		control:RunFor(self, self:GetAttribute("UpdateState"), message)
-		-- set it after refreshing the other attributes, so the OnAttributeChanged callback can catch it with updated informations
-		self:SetAttribute("state", message)
+		print("state update", message)
+		self:RunAttribute("UpdateState", message)
 	]])
-
-	-- register for attribute changes
-	button:SetScript("OnAttributeChanged", Generic.OnAttributeChanged)
-	button:SetScript("OnDragStart", Generic.OnDragStart)
-	button:SetScript("OnReceiveDrag", Generic.OnReceiveDrag)
 
 	-- secure PickupButton(self, kind, value, ...)
 	-- utility function to place a object on the cursor
@@ -138,7 +139,7 @@ function lib:CreateButton(id, name, header)
 
 	-- Wrapped OnDragStart(self, button, kind, value, ...)
 	header:WrapScript(button, "OnDragStart", [[
-		print("DragStart")
+		print("OnDragStart secure")
 		local subtype = ...
 		local state = self:GetAttribute("state")
 		local type = self:GetAttribute("type")
@@ -162,7 +163,7 @@ function lib:CreateButton(id, name, header)
 
 	-- Wrapped OnReceiveDrag(self, button, kind, value, ...)
 	header:WrapScript(button, "OnReceiveDrag", [[
-		print("ReceiveDrag")
+		print("OnReceiveDrag secure")
 		local subtype = ...
 		local state = self:GetAttribute("state")
 		local buttonType, buttonAction = self:GetAttribute("type"), nil
@@ -194,6 +195,8 @@ function lib:CreateButton(id, name, header)
 			self:SetAttribute(format("type-%d", state), kind)
 			self:SetAttribute(format("action-%d", state), value)
 			self:RunAttribute("UpdateState", state)
+			-- action buttons get updated by event handlers, don't have to deal with them here
+			self:CallMethod("UpdateAction")
 		else
 			-- get the action for (pet-)action buttons
 			buttonAction = self:GetAttribute("action")
@@ -212,9 +215,6 @@ function lib:CreateButton(id, name, header)
 	button.border             = _G[name .. "Border"]
 	button.cooldown           = _G[name .. "Cooldown"]
 	button.normalTexture      = _G[name .. "NormalTexture"]
-
-	button:RegisterForDrag("LeftButton", "RightButton")
-	button:RegisterForClicks("AnyUp")
 
 	return button
 end
@@ -269,35 +269,12 @@ end
 function Generic:GetAction(state)
 	if not state then state = self:GetAttribute("state") end
 	state = tonumber(state)
-	return self.state_types[state], self.state_actions[state]
+	return self.state_types[state] or "empty", self.state_actions[state]
 end
 
 function Generic:UpdateAllStates()
 	for state in pairs(self.state_types) do
 		self:UpdateState(state)
-	end
-end
-
------------------------------------------------------------
---- frame scripts
-
-function Generic:OnAttributeChanged(attr, value)
-	if attr == "state" then
-		self:UpdateAction()
-	end
-end
-
-function Generic:OnDragStart()
-	if not self:UpdateAction() then
-		UpdateButtonState(self)
-		UpdateFlash(self)
-	end
-end
-
-function Generic:OnReceiveDrag()
-	if not self:UpdateAction() then
-		UpdateButtonState(self)
-		UpdateFlash(self)
 	end
 end
 
@@ -315,9 +292,7 @@ function Generic:UpdateAction(force)
 		end
 		self._state_action = action
 		Update(self)
-		return true
 	end
-	return false
 end
 
 function Update(self)
