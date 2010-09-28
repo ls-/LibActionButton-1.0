@@ -164,9 +164,10 @@ function lib:CreateButton(id, name, header)
 		if type ~= "action" and type ~= "pet" then
 			self:SetAttribute(format("labtype-%d", state), "empty")
 			self:SetAttribute(format("labaction-%d", state), nil)
-			self:RunAttribute("UpdateState", state)
 			-- send a notification to the insecure code
 			self:CallMethod("ButtonContentsChanged", state, "empty", nil)
+			-- update internal state, this needs to be after ButtonContentsChanged so the insecure code knows about the change already
+			self:RunAttribute("UpdateState", state)
 		end
 		-- return the button contents for pickup
 		return self:RunAttribute("PickupButton", type, action)
@@ -204,9 +205,10 @@ function lib:CreateButton(id, name, header)
 
 			self:SetAttribute(format("labtype-%d", state), kind)
 			self:SetAttribute(format("labaction-%d", state), value)
-			self:RunAttribute("UpdateState", state)
 			-- send a notification to the insecure code
 			self:CallMethod("ButtonContentsChanged", state, kind, value)
+			-- update internal state, this needs to be after ButtonContentsChanged so the insecure code knows about the change already
+			self:RunAttribute("UpdateState", state)
 		else
 			-- get the action for (pet-)action buttons
 			buttonAction = self:GetAttribute("action")
