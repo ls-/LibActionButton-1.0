@@ -85,6 +85,7 @@ function lib:CreateButton(id, name, header)
 
 	button:SetScript("OnEnter", Generic.OnEnter)
 	button:SetScript("OnLeave", Generic.OnLeave)
+	button:SetScript("PostClick", Generic.PostClick)
 
 	button.id = id
 	button.header = header
@@ -299,6 +300,10 @@ end
 
 function Generic:OnLeave()
 	GameTooltip:Hide()
+end
+
+function Generic:PostClick()
+	UpdateButtonState(self)
 end
 
 -----------------------------------------------------------
