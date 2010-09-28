@@ -337,7 +337,6 @@ function InitializeEventHandler()
 	Generic:RegisterEvent("ACTIONBAR_UPDATE_STATE")
 	Generic:RegisterEvent("ACTIONBAR_UPDATE_USABLE")
 	Generic:RegisterEvent("ACTIONBAR_UPDATE_COOLDOWN")
-	Generic:RegisterEvent("UPDATE_INVENTORY_ALERTS")
 	Generic:RegisterEvent("PLAYER_TARGET_CHANGED")
 	Generic:RegisterEvent("TRADE_SKILL_SHOW")
 	Generic:RegisterEvent("TRADE_SKILL_CLOSE")
@@ -355,6 +354,10 @@ function InitializeEventHandler()
 	Generic:RegisterEvent("PET_STABLE_SHOW")
 	Generic:RegisterEvent("SPELL_ACTIVATION_OVERLAY_GLOW_SHOW")
 	Generic:RegisterEvent("SPELL_ACTIVATION_OVERLAY_GLOW_HIDE")
+
+	-- With those two, do we still need the ACTIONBAR equivalents of them?
+	Generic:RegisterEvent("SPELL_UPDATE_COOLDOWN")
+	Generic:RegisterEvent("SPELL_UPDATE_USABLE")
 end
 
 function OnEvent(frame, event, arg1, ...)
@@ -385,9 +388,9 @@ function OnEvent(frame, event, arg1, ...)
 		((event == "UNIT_ENTERED_VEHICLE" or event == "UNIT_EXITED_VEHICLE") and (arg1 == "player")) or
 		((event == "COMPANION_UPDATE") and (arg1 == "MOUNT")) then
 		ForAllButtons(UpdateButtonState, true)
-	elseif event == "ACTIONBAR_UPDATE_USABLE" then
+	elseif event == "ACTIONBAR_UPDATE_USABLE" or event == "SPELL_UPDATE_USABLE" then
 		ForAllButtons(UpdateUsable, true)
-	elseif event == "ACTIONBAR_UPDATE_COOLDOWN" then
+	elseif event == "ACTIONBAR_UPDATE_COOLDOWN" or event == "SPELL_UPDATE_COOLDOWN" then
 		ForAllButtons(UpdateCooldown, true)
 	elseif event == "TRADE_SKILL_SHOW" or event == "TRADE_SKILL_CLOSE"  or event == "ARCHAEOLOGY_CLOSED" then
 		ForAllButtons(UpdateButtonState, true)
