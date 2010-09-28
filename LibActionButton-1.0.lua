@@ -98,7 +98,7 @@ function lib:CreateButton(id, name, header)
 		-- note that GetAttribute("state") is not guaranteed to return the current state in this method!
 		local state = ...
 		self:SetAttribute("state", state)
-		local type, action = (self:GetAttribute(format("type-%d", state)) or "empty"), self:GetAttribute(format("action-%d", state))
+		local type, action = (self:GetAttribute(format("labtype-%d", state)) or "empty"), self:GetAttribute(format("labaction-%d", state))
 		print(state, type, action)
 
 		self:SetAttribute("type", type)
@@ -108,7 +108,7 @@ function lib:CreateButton(id, name, header)
 			self:SetAttribute("action_field", action_field)
 		end
 
-		-- when called from the OnDrag scripts, the button will still hold the old action
+		-- for action buttons, when called from the OnDrag scripts, the button will still hold the old action
 		-- however, the ACTIONBAR_SLOT_CHANGED event will fire after the change, and cause an update anyway
 		self:CallMethod("UpdateAction")
 	]])
@@ -153,9 +153,11 @@ function lib:CreateButton(id, name, header)
 
 		-- non-action fields need to change their type to empty
 		if type ~= "action" and type ~= "pet" then
-			self:SetAttribute(format("type-%d", state), "empty")
-			self:SetAttribute(format("action-%d", state), nil)
+			self:SetAttribute(format("labtype-%d", state), "empty")
+			self:SetAttribute(format("labaction-%d", state), nil)
 			self:RunAttribute("UpdateState", state)
+			-- send a notification to the insecure code
+			self:CallMethod("ButtonContentsChanged", "empty", nil)
 		end
 		-- return the button contents for pickup
 		return self:RunAttribute("PickupButton", type, action)
@@ -192,11 +194,11 @@ function lib:CreateButton(id, name, header)
 			-- We can only use a handful of the possible things on the cursor
 			-- return false for all those we can't put on buttons
 
-			self:SetAttribute(format("type-%d", state), kind)
-			self:SetAttribute(format("action-%d", state), value)
+			self:SetAttribute(format("labtype-%d", state), kind)
+			self:SetAttribute(format("labaction-%d", state), value)
 			self:RunAttribute("UpdateState", state)
-			-- action buttons get updated by event handlers, don't have to deal with them here
-			self:CallMethod("UpdateAction")
+			-- send a notification to the insecure code
+			self:CallMethod("ButtonContentsChanged", kind, value)
 		else
 			-- get the action for (pet-)action buttons
 			buttonAction = self:GetAttribute("action")
@@ -224,8 +226,8 @@ end
 
 function Generic:ClearStates()
 	for state in pairs(self.state_types) do
-		self:SetAttribute(format("type-%d", state), nil)
-		self:SetAttribute(format("action-%d", state), nil)
+		self:SetAttribute(format("labtype-%d", state), nil)
+		self:SetAttribute(format("labaction-%d", state), nil)
 	end
 	wipe(self.state_types)
 	wipe(self.state_actions)
@@ -251,8 +253,8 @@ end
 
 function Generic:UpdateState(state)
 	state = tonumber(state)
-	self:SetAttribute(format("type-%d", state), self.state_types[state])
-	self:SetAttribute(format("action-%d", state), self.state_actions[state])
+	self:SetAttribute(format("labtype-%d", state), self.state_types[state])
+	self:SetAttribute(format("labaction-%d", state), self.state_actions[state])
 	if state ~= self:GetAttribute("state") then return end
 	if self.header then
 		self.header:SetFrameRef("updateButton", self)
@@ -278,6 +280,11 @@ function Generic:UpdateAllStates()
 	end
 end
 
+function Generic:ButtonContentsChanged(kind, value)
+	print("button contents changed", kind, value)
+	-- TODO: Notify addon about this
+end
+
 -----------------------------------------------------------
 --- button management
 
@@ -286,7 +293,7 @@ function Generic:UpdateAction(force)
 	if force or type ~= self._state_type or action ~= self._state_action then
 		-- type changed, update the metatable
 		if self._state_type ~= type then
-			local meta = type_meta_map[type] or type_meta_map["empty"]
+			local meta = type_meta_map[type] or type_meta_map.empty
 			setmetatable(self, meta)
 			self._state_type = type
 		end
