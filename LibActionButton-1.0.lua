@@ -55,7 +55,7 @@ local Item_MT = {__index = Item}
 local Macro = setmetatable({}, {__index = Generic})
 local Macro_MT = {__index = Macro}
 
-local state_meta_map = {
+local type_meta_map = {
 	empty  = Generic_MT,
 	action = Action_MT,
 	pet    = PetAction_MT,
@@ -98,13 +98,12 @@ function lib:CreateButton(id, name, header)
 		local type, action = self:GetAttribute(format("type-%d", state)), self:GetAttribute(format("action-%d", state))
 		print(state, type, action)
 
-		local action_field = type
-		if type == "pet" then
-			action_field = "action"
-		end
-
 		self:SetAttribute("type", type)
-		self:SetAttribute(action_field, action)
+		if type ~= "empty" then
+			local action_field = (type == "pet") and "action" or type
+			self:SetAttribute(action_field, action)
+			self:SetAttribute("action_field", action_field)
+		end
 	]])
 
 	-- this function is invoked by the header when the state changes
@@ -116,6 +115,91 @@ function lib:CreateButton(id, name, header)
 
 	-- register for attribute changes
 	button:SetScript("OnAttributeChanged", Generic.OnAttributeChanged)
+	button:SetScript("OnDragStart", Generic.OnDragStart)
+	button:SetScript("OnReceiveDrag", Generic.OnReceiveDrag)
+
+	-- secure PickupButton(self, kind, value, ...)
+	-- utility function to place a object on the cursor
+	button:SetAttribute("PickupButton", [[
+		local kind, value = ...
+		if kind == "empty" then
+			return "clear"
+		elseif kind == "action" or kind == "item" or kind == "macro" or kind == "pet" then
+			local actionType = (kind == "pet") and "petaction" or kind
+			return actionType, value
+		-- we need to return the spellbook id for spells
+		elseif kind == "spell" then
+			return kind, FindSpellBookSlotBySpellID(value)
+		else
+			print("LibActionButton-1.0: Unknown type: " .. tostring(kind))
+			return false
+		end
+	]])
+
+	-- Wrapped OnDragStart(self, button, kind, value, ...)
+	header:WrapScript(button, "OnDragStart", [[
+		print("DragStart")
+		local subtype = ...
+		local state = self:GetAttribute("state")
+		local type = self:GetAttribute("type")
+		-- if the button is empty, we can't drag anything off it
+		if type == "empty" then
+			return false
+		end
+		-- Get the value for the action attribute
+		local action_field = self:GetAttribute("action_field")
+		local action = self:GetAttribute(action_field)
+
+		-- non-action fields need to change their type to empty
+		if type ~= "action" and type ~= "pet" then
+			self:SetAttribute(format("type-%d", state), "empty")
+			self:SetAttribute(format("action-%d", state), nil)
+			self:RunAttribute("UpdateState", state)
+		end
+		-- return the button contents for pickup
+		return self:RunAttribute("PickupButton", type, action)
+	]])
+
+	-- Wrapped OnReceiveDrag(self, button, kind, value, ...)
+	header:WrapScript(button, "OnReceiveDrag", [[
+		print("ReceiveDrag")
+		local subtype = ...
+		local state = self:GetAttribute("state")
+		local buttonType, buttonAction = self:GetAttribute("type"), nil
+		-- action buttons can do their magic themself
+		-- for all other buttons, we'll need to update the content now
+		if buttonType ~= "action" and buttonType ~= "pet" then
+			-- We get spell book ids from CursorInfo
+			-- Convert them to actual spell ids
+			if kind == "spell" then
+				-- TODO: This needs either an API update or a lookup table
+				local stype, sid -- = GetSpellBookItemInfo(value, subtype)
+				if stype == "SPELL" then
+					value = sid
+				else
+					-- we don't accept anything else then spells from the spellbook
+					return false
+				end
+			end
+
+			-- Get the action that was on the button before
+			if buttonType ~= "empty" then
+				buttonAction = self:GetAttribute(self:GetAttribute("action_field"))
+			end
+
+			-- TODO: validate what kind of action is being fed in here
+			-- We can only use a handful of the possible things on the cursor
+			-- return false for all those we can't put on buttons
+
+			self:SetAttribute(format("type-%d", state), kind)
+			self:SetAttribute(format("action-%d", state), value)
+			self:RunAttribute("UpdateState", state)
+		else
+			-- get the action for (pet-)action buttons
+			buttonAction = self:GetAttribute("action")
+		end
+		return self:RunAttribute("PickupButton", buttonType, buttonAction)
+	]])
 
 	button.icon               = _G[name .. "Icon"]
 	button.flash              = _G[name .. "Flash"]
@@ -129,17 +213,14 @@ function lib:CreateButton(id, name, header)
 	button.cooldown           = _G[name .. "Cooldown"]
 	button.normalTexture      = _G[name .. "NormalTexture"]
 
+	button:RegisterForDrag("LeftButton", "RightButton")
+	button:RegisterForClicks("AnyUp")
+
 	return button
 end
 
 -----------------------------------------------------------
 --- state management
-
-function Generic:OnAttributeChanged(attr, value)
-	if attr == "state" then
-		self:UpdateAction()
-	end
-end
 
 function Generic:ClearStates()
 	for state in pairs(self.state_types) do
@@ -150,12 +231,20 @@ function Generic:ClearStates()
 	wipe(self.state_actions)
 end
 
-function Generic:SetState(state, type, action)
+function Generic:SetState(state, kind, action)
 	state = tonumber(state)
-	if state ~= 1 and not self.header then
-		error("SetStateAction: state ~= 1 requires a secure header!", 2)
+	-- we allow a nil kind for setting a empty state
+	if not kind then kind = "empty" end
+	if not type_meta_map[kind] then
+		error("SetStateAction: unknown action type: %s" .. tostring(kind), 2)
 	end
-	self.state_types[state] = type
+	if kind ~= "empty" and action == nil then
+		error("SetStateAction: an action is required for non-empty states", 2)
+	end
+	if action ~= nil and type(action) ~= "number" and type(action) ~= "string" then
+		error("SetStateAction: invalid action data type, only strings and numbers allowed", 2)
+	end
+	self.state_types[state] = kind
 	self.state_actions[state] = action
 	self:UpdateState(state)
 end
@@ -190,6 +279,29 @@ function Generic:UpdateAllStates()
 end
 
 -----------------------------------------------------------
+--- frame scripts
+
+function Generic:OnAttributeChanged(attr, value)
+	if attr == "state" then
+		self:UpdateAction()
+	end
+end
+
+function Generic:OnDragStart()
+	if not self:UpdateAction() then
+		UpdateButtonState(self)
+		UpdateFlash(self)
+	end
+end
+
+function Generic:OnReceiveDrag()
+	if not self:UpdateAction() then
+		UpdateButtonState(self)
+		UpdateFlash(self)
+	end
+end
+
+-----------------------------------------------------------
 --- button management
 
 function Generic:UpdateAction(force)
@@ -197,17 +309,19 @@ function Generic:UpdateAction(force)
 	if force or type ~= self._state_type or action ~= self._state_action then
 		-- type changed, update the metatable
 		if self._state_type ~= type then
-			local meta = state_meta_map[type] or state_meta_map["empty"]
+			local meta = type_meta_map[type] or type_meta_map["empty"]
 			setmetatable(self, meta)
 			self._state_type = type
 		end
 		self._state_action = action
 		Update(self)
+		return true
 	end
+	return false
 end
 
 function Update(self)
-	if not self:IsEmpty() then
+	if self:HasAction() then
 	-- TODO: Show button
 		UpdateButtonState(self)
 		UpdateUsable(self)
@@ -360,7 +474,7 @@ end
 -----------------------------------------------------------
 --- WoW API mapping
 --- Generic Button
-Generic.IsEmpty                 = function(self) return true end
+Generic.HasAction               = function(self) return nil end
 Generic.GetActionText           = function(self) return "" end
 Generic.GetTexture              = function(self) return nil end
 Generic.GetCount                = function(self) return 0 end
@@ -376,7 +490,7 @@ Generic.SetTooltip              = function(self) return nil end
 
 -----------------------------------------------------------
 --- Action Button
-Action.IsEmpty                 = function(self) return not HasAction(self._state_action) end
+Action.HasAction               = function(self) return HasAction(self._state_action) end
 Action.GetActionText           = function(self) return GetActionText(self._state_action) end
 Action.GetTexture              = function(self) return GetActionTexture(self._state_action) end
 Action.GetCount                = function(self) return GetActionCount(self._state_action) end
@@ -389,3 +503,20 @@ Action.IsUsable                = function(self) return IsUsableAction(self._stat
 Action.IsConsumableOrStackable = function(self) return IsConsumableAction(self._state_action) or IsStackableAction(self._state_action) end
 Action.IsInRange               = function(self) return IsActionInRange(self._state_action) end
 Action.SetTooltip              = function(self) return GameTooltip:SetAction(self._state_action) end
+
+-----------------------------------------------------------
+--- Spell Button
+-- TODO: Validate those functions work with spell id or spellbook id in 4.0
+Spell.HasAction               = function(self) return true end
+Spell.GetActionText           = function(self) return "" end
+Spell.GetTexture              = function(self) return GetSpellTexture(self._state_action) end
+Spell.GetCount                = function(self) return GetSpellCount(self._state_action) end
+Spell.GetCooldown             = function(self) return GetSpellCooldown(self._state_action) end
+Spell.IsAttack                = function(self) return IsAttackSpell(self._state_action) end
+Spell.IsEquipped              = function(self) return false end
+Spell.IsCurrentlyActive       = function(self) return IsCurrentSpell(self._state_action) end
+Spell.IsAutoRepeat            = function(self) return IsAutoRepeatSpell(self._state_action) end
+Spell.IsUsable                = function(self) return IsUsableSpell(self._state_action) end
+Spell.IsConsumableOrStackable = function(self) return IsConsumableSpell(self._state_action) end
+Spell.IsInRange               = function(self) return IsSpellInRange(self._state_action, "target") end
+Spell.SetTooltip              = function(self) return GameTooltip:SetSpellByID(self._state_action) end
