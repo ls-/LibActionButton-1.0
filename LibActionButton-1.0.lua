@@ -64,8 +64,12 @@ local type_meta_map = {
 	macro  = Macro_MT
 }
 
+local ButtonRegistry, ActiveButtons = {}, {}
+
 local Update, UpdateButtonState, UpdateUsable, UpdateCount, UpdateCooldown, UpdateTooltip
-local StartFlash, StopFlash, UpdateFlash, UpdateHotkeys
+local StartFlash, StopFlash, UpdateFlash, UpdateHotkeys, UpdateRangeTimer, UpdateOverlayGlow
+
+local InitializeEventHandler, OnEvent, ForAllButtons
 
 --- Create a new action button.
 -- @param id Internal id of the button (not used by LibActionButton-1.0, only for tracking inside the calling addon)
@@ -92,6 +96,9 @@ function lib:CreateButton(id, name, header)
 	-- Mapping of state -> action
 	button.state_types = {}
 	button.state_actions = {}
+
+	-- Store the LAB Version that created this button for debugging
+	button.__LAB_Version = MINOR_VERSION
 
 	-- just in case we're not run by a header, default to state 1
 	button:SetAttribute("state", 1)
@@ -222,6 +229,10 @@ function lib:CreateButton(id, name, header)
 	button.cooldown           = _G[name .. "Cooldown"]
 	button.normalTexture      = _G[name .. "NormalTexture"]
 
+	if not next(ButtonRegistry) then
+		InitializeEventHandler()
+	end
+	ButtonRegistry[button] = true
 	return button
 end
 
@@ -307,6 +318,128 @@ function Generic:PostClick()
 end
 
 -----------------------------------------------------------
+--- event handler
+
+function ForAllButtons(method, onlyWithAction, ...)
+	assert(type(method) == "function")
+	for button in next, (onlyWithAction and ActiveButtons or ButtonRegistry) do
+		method(button, ...)
+	end
+end
+
+function InitializeEventHandler()
+	-- I'm abusing the "Generic" base frame as event handler
+	Generic:SetScript("OnEvent", OnEvent)
+	Generic:RegisterEvent("PLAYER_ENTERING_WORLD")
+	Generic:RegisterEvent("ACTIONBAR_SHOWGRID")
+	Generic:RegisterEvent("ACTIONBAR_HIDEGRID")
+	Generic:RegisterEvent("ACTIONBAR_PAGE_CHANGED")
+	Generic:RegisterEvent("ACTIONBAR_SLOT_CHANGED")
+	Generic:RegisterEvent("UPDATE_BINDINGS")
+	Generic:RegisterEvent("UPDATE_SHAPESHIFT_FORM")
+
+	Generic:RegisterEvent("ACTIONBAR_UPDATE_STATE")
+	Generic:RegisterEvent("ACTIONBAR_UPDATE_USABLE")
+	Generic:RegisterEvent("ACTIONBAR_UPDATE_COOLDOWN")
+	Generic:RegisterEvent("UPDATE_INVENTORY_ALERTS")
+	Generic:RegisterEvent("PLAYER_TARGET_CHANGED")
+	Generic:RegisterEvent("TRADE_SKILL_SHOW")
+	Generic:RegisterEvent("TRADE_SKILL_CLOSE")
+	Generic:RegisterEvent("ARCHAEOLOGY_CLOSED")
+	Generic:RegisterEvent("PLAYER_ENTER_COMBAT")
+	Generic:RegisterEvent("PLAYER_LEAVE_COMBAT")
+	Generic:RegisterEvent("START_AUTOREPEAT_SPELL")
+	Generic:RegisterEvent("STOP_AUTOREPEAT_SPELL")
+	Generic:RegisterEvent("UNIT_ENTERED_VEHICLE")
+	Generic:RegisterEvent("UNIT_EXITED_VEHICLE")
+	Generic:RegisterEvent("COMPANION_UPDATE")
+	Generic:RegisterEvent("UNIT_INVENTORY_CHANGED")
+	Generic:RegisterEvent("LEARNED_SPELL_IN_TAB")
+	Generic:RegisterEvent("PET_STABLE_UPDATE")
+	Generic:RegisterEvent("PET_STABLE_SHOW")
+	Generic:RegisterEvent("SPELL_ACTIVATION_OVERLAY_GLOW_SHOW")
+	Generic:RegisterEvent("SPELL_ACTIVATION_OVERLAY_GLOW_HIDE")
+end
+
+function OnEvent(frame, event, arg1, ...)
+	if (event == "UNIT_INVENTORY_CHANGED" and arg1 == "player") or event == "LEARNED_SPELL_IN_TAB" then
+		local tooltipOwner = GameTooltip:GetOwner()
+		if ButtonRegistry[tooltipOwner] then
+			tooltipOwner:SetTooltip()
+		end
+	elseif event == "ACTIONBAR_SLOT_CHANGED" then
+		for button in next, ButtonRegistry do
+			if button._state_type == "action" and (arg1 == 0 or arg1 == tonumber(button._state_action)) then
+				Update(button)
+			end
+		end
+	elseif event == "PLAYER_ENTERING_WORLD" or event == "UPDATE_SHAPESHIFT_FORM" then
+		ForAllButtons(Update)
+	elseif event == "ACTIONBAR_PAGE_CHANGED" or event == "UPDATE_BONUS_ACTIONBAR" then
+		-- TODO: Are these even needed?
+	elseif event == "ACTIONBAR_SHOWGRID" then
+		-- TODO
+	elseif event == "ACTIONBAR_HIDEGRID" then
+		-- TODO
+	elseif event == "UPDATE_BINDINGS" then
+		ForAllButtons(UpdateHotkeys)
+	elseif event == "PLAYER_TARGET_CHANGED" then
+		ForAllButtons(UpdateRangeTimer, true)
+	elseif (event == "ACTIONBAR_UPDATE_STATE") or
+		((event == "UNIT_ENTERED_VEHICLE" or event == "UNIT_EXITED_VEHICLE") and (arg1 == "player")) or
+		((event == "COMPANION_UPDATE") and (arg1 == "MOUNT")) then
+		ForAllButtons(UpdateButtonState, true)
+	elseif event == "ACTIONBAR_UPDATE_USABLE" then
+		ForAllButtons(UpdateUsable, true)
+	elseif event == "ACTIONBAR_UPDATE_COOLDOWN" then
+		ForAllButtons(UpdateCooldown, true)
+	elseif event == "TRADE_SKILL_SHOW" or event == "TRADE_SKILL_CLOSE"  or event == "ARCHAEOLOGY_CLOSED" then
+		ForAllButtons(UpdateButtonState, true)
+	elseif event == "PLAYER_ENTER_COMBAT" then
+		for button in next, ActiveButtons do
+			if button:IsAttack() then
+				StartFlash(button)
+			end
+		end
+	elseif event == "PLAYER_LEAVE_COMBAT" then
+		for button in next, ActiveButtons do
+			if button:IsAttack() then
+				StopFlash(button)
+			end
+		end
+	elseif event == "START_AUTOREPEAT_SPELL" then
+		for button in next, ActiveButtons do
+			if button:IsAutoRepeat() then
+				StartFlash(button)
+			end
+		end
+	elseif event == "STOP_AUTOREPEAT_SPELL" then
+		for button in next, ActiveButtons do
+			if button.flashing == 1 and not button:IsAttack() then
+				StopFlash(button)
+			end
+		end
+	elseif event == "PET_STABLE_UPDATE" or event == "PET_STABLE_SHOW" then
+		ForAllButtons(UpdateUsable, true)
+	elseif event == "SPELL_ACTIVATION_OVERLAY_GLOW_SHOW" then
+		for button in next, ActiveButtons do
+			print("overlay for", arg1)
+			local spellId = button:GetSpellId()
+			if spellId and spellId == arg1 then
+				ActionButton_ShowOverlayGlow(button)
+			end
+		end
+	elseif event == "SPELL_ACTIVATION_OVERLAY_GLOW_HIDE" then
+		for button in next, ActiveButtons do
+			local spellId = button:GetSpellId()
+			if spellId and spellId == arg1 then
+				ActionButton_HideOverlayGlow(button)
+			end
+		end
+	end
+end
+
+-----------------------------------------------------------
 --- button management
 
 function Generic:UpdateAction(force)
@@ -325,12 +458,14 @@ end
 
 function Update(self)
 	if self:HasAction() then
-	-- TODO: Show button
+		ActiveButtons[self] = true
+		-- TODO: Show button
 		UpdateButtonState(self)
 		UpdateUsable(self)
 		UpdateCooldown(self)
 		UpdateFlash(self)
 	else
+		ActiveButtons[self] = nil
 	-- TODO: Hide button
 		self.cooldown:Hide()
 	end
@@ -374,7 +509,7 @@ function Update(self)
 	UpdateCount(self)
 
 	-- TODO: Update flyout
-	-- TODO: Update Overlay Glow
+	UpdateOverlayGlow(self)
 
 	if GameTooltip:GetOwner() == self then
 		UpdateTooltip(self)
@@ -474,6 +609,19 @@ function UpdateHotkeys(self)
 	end
 end
 
+function UpdateOverlayGlow(self)
+	local spellId = self:GetSpellId()
+	if spellId and IsSpellOverlayed(spellId) then
+		ActionButton_ShowOverlayGlow(self)
+	else
+		ActionButton_HideOverlayGlow(self)
+	end
+end
+
+function UpdateRangeTimer(self)
+	self.rangeTimer = -1
+end
+
 -----------------------------------------------------------
 --- WoW API mapping
 --- Generic Button
@@ -490,6 +638,7 @@ Generic.IsUsable                = function(self) return nil end
 Generic.IsConsumableOrStackable = function(self) return nil end
 Generic.IsInRange               = function(self) return nil end
 Generic.SetTooltip              = function(self) return nil end
+Generic.GetSpellId              = function(self) return nil end
 
 -----------------------------------------------------------
 --- Action Button
@@ -506,6 +655,7 @@ Action.IsUsable                = function(self) return IsUsableAction(self._stat
 Action.IsConsumableOrStackable = function(self) return IsConsumableAction(self._state_action) or IsStackableAction(self._state_action) end
 Action.IsInRange               = function(self) return IsActionInRange(self._state_action) end
 Action.SetTooltip              = function(self) return GameTooltip:SetAction(self._state_action) end
+Action.GetSpellId              = function(self) local actionType, id, subType = GetActionInfo(self._state_action) return actionType == "spell" and id or nil end
 
 -----------------------------------------------------------
 --- Spell Button
@@ -522,3 +672,4 @@ Spell.IsUsable                = function(self) return IsUsableSpell(self._state_
 Spell.IsConsumableOrStackable = function(self) return IsConsumableSpell(self._state_action) end
 Spell.IsInRange               = function(self) return IsSpellInRange(FindSpellBookSlotBySpellID(self._state_action), "spell", "target") end -- needs spell book id as of 4.0.1.13066
 Spell.SetTooltip              = function(self) return GameTooltip:SetSpellByID(self._state_action) end
+Spell.GetSpellId              = function(self) return self._state_action end
