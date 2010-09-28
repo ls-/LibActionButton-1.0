@@ -157,7 +157,7 @@ function lib:CreateButton(id, name, header)
 			self:SetAttribute(format("labaction-%d", state), nil)
 			self:RunAttribute("UpdateState", state)
 			-- send a notification to the insecure code
-			self:CallMethod("ButtonContentsChanged", "empty", nil)
+			self:CallMethod("ButtonContentsChanged", state, "empty", nil)
 		end
 		-- return the button contents for pickup
 		return self:RunAttribute("PickupButton", type, action)
@@ -198,7 +198,7 @@ function lib:CreateButton(id, name, header)
 			self:SetAttribute(format("labaction-%d", state), value)
 			self:RunAttribute("UpdateState", state)
 			-- send a notification to the insecure code
-			self:CallMethod("ButtonContentsChanged", kind, value)
+			self:CallMethod("ButtonContentsChanged", state, kind, value)
 		else
 			-- get the action for (pet-)action buttons
 			buttonAction = self:GetAttribute("action")
@@ -280,8 +280,10 @@ function Generic:UpdateAllStates()
 	end
 end
 
-function Generic:ButtonContentsChanged(kind, value)
-	print("button contents changed", kind, value)
+function Generic:ButtonContentsChanged(state, kind, value)
+	print("button contents changed", state, kind, value)
+	self.state_types[state] = kind or "emtpy"
+	self.state_actions[state] = value
 	-- TODO: Notify addon about this
 end
 
