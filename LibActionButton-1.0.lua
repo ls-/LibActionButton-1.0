@@ -104,7 +104,7 @@ function lib:CreateButton(id, name, header)
 	-- just in case we're not run by a header, default to state 1
 	button:SetAttribute("state", 1)
 
-	-- securefunction UpdateState(self, state)
+	-- secure UpdateState(self, state)
 	-- update the type and action of the button based on the state
 	button:SetAttribute("UpdateState", [[
 		-- note that GetAttribute("state") is not guaranteed to return the current state in this method!
@@ -118,15 +118,12 @@ function lib:CreateButton(id, name, header)
 			self:SetAttribute(action_field, action)
 			self:SetAttribute("action_field", action_field)
 		end
-
-		-- for action buttons, when called from the OnDrag scripts, the button will still hold the old action
-		-- however, the ACTIONBAR_SLOT_CHANGED event will fire after the change, and cause an update anyway
-		self:CallMethod("UpdateAction")
 	]])
 
 	-- this function is invoked by the header when the state changes
 	button:SetAttribute("_childupdate-state", [[
 		self:RunAttribute("UpdateState", message)
+		self:CallMethod("UpdateAction")
 	]])
 
 	-- secure PickupButton(self, kind, value, ...)
@@ -164,10 +161,10 @@ function lib:CreateButton(id, name, header)
 		if type ~= "action" and type ~= "pet" then
 			self:SetAttribute(format("labtype-%d", state), "empty")
 			self:SetAttribute(format("labaction-%d", state), nil)
+			-- update internal state
+			self:RunAttribute("UpdateState", state)
 			-- send a notification to the insecure code
 			self:CallMethod("ButtonContentsChanged", state, "empty", nil)
-			-- update internal state, this needs to be after ButtonContentsChanged so the insecure code knows about the change already
-			self:RunAttribute("UpdateState", state)
 		end
 		-- return the button contents for pickup
 		return self:RunAttribute("PickupButton", type, action)
@@ -205,10 +202,10 @@ function lib:CreateButton(id, name, header)
 
 			self:SetAttribute(format("labtype-%d", state), kind)
 			self:SetAttribute(format("labaction-%d", state), value)
+			-- update internal state
+			self:RunAttribute("UpdateState", state)
 			-- send a notification to the insecure code
 			self:CallMethod("ButtonContentsChanged", state, kind, value)
-			-- update internal state, this needs to be after ButtonContentsChanged so the insecure code knows about the change already
-			self:RunAttribute("UpdateState", state)
 		else
 			-- get the action for (pet-)action buttons
 			buttonAction = self:GetAttribute("action")
@@ -236,7 +233,7 @@ function lib:CreateButton(id, name, header)
 	ButtonRegistry[button] = true
 
 	-- run an initial update
-	UpdateAction(button)
+	button:UpdateAction()
 	UpdateHotkeys(button)
 
 	return button
@@ -306,6 +303,7 @@ function Generic:ButtonContentsChanged(state, kind, value)
 	self.state_types[state] = kind or "emtpy"
 	self.state_actions[state] = value
 	-- TODO: Notify addon about this
+	self:UpdateAction(self)
 end
 
 -----------------------------------------------------------
