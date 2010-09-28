@@ -110,7 +110,6 @@ function lib:CreateButton(id, name, header)
 		local state = ...
 		self:SetAttribute("state", state)
 		local type, action = (self:GetAttribute(format("labtype-%d", state)) or "empty"), self:GetAttribute(format("labaction-%d", state))
-		print(state, type, action)
 
 		self:SetAttribute("type", type)
 		if type ~= "empty" then
@@ -126,7 +125,6 @@ function lib:CreateButton(id, name, header)
 
 	-- this function is invoked by the header when the state changes
 	button:SetAttribute("_childupdate-state", [[
-		print("state update", message)
 		self:RunAttribute("UpdateState", message)
 	]])
 
@@ -150,7 +148,6 @@ function lib:CreateButton(id, name, header)
 
 	-- Wrapped OnDragStart(self, button, kind, value, ...)
 	header:WrapScript(button, "OnDragStart", [[
-		print("OnDragStart secure")
 		local subtype = ...
 		local state = self:GetAttribute("state")
 		local type = self:GetAttribute("type")
@@ -176,7 +173,6 @@ function lib:CreateButton(id, name, header)
 
 	-- Wrapped OnReceiveDrag(self, button, kind, value, ...)
 	header:WrapScript(button, "OnReceiveDrag", [[
-		print("OnReceiveDrag secure")
 		local subtype = ...
 		local state = self:GetAttribute("state")
 		local buttonType, buttonAction = self:GetAttribute("type"), nil
@@ -423,7 +419,6 @@ function OnEvent(frame, event, arg1, ...)
 		ForAllButtons(UpdateUsable, true)
 	elseif event == "SPELL_ACTIVATION_OVERLAY_GLOW_SHOW" then
 		for button in next, ActiveButtons do
-			print("overlay for", arg1)
 			local spellId = button:GetSpellId()
 			if spellId and spellId == arg1 then
 				ActionButton_ShowOverlayGlow(button)
