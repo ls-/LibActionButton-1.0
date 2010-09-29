@@ -144,6 +144,7 @@ function lib:CreateButton(id, name, header)
 
 	-- Wrapped OnDragStart(self, button, kind, value, ...)
 	header:WrapScript(button, "OnDragStart", [[
+		if self:GetAttribute("LABdisableDragNDrop") then return false end
 		local subtype = ...
 		local state = self:GetAttribute("state")
 		local type = self:GetAttribute("type")
@@ -170,6 +171,7 @@ function lib:CreateButton(id, name, header)
 
 	-- Wrapped OnReceiveDrag(self, button, kind, value, ...)
 	header:WrapScript(button, "OnReceiveDrag", [[
+		if self:GetAttribute("LABdisableDragNDrop") then return false end
 		local subtype = ...
 		local state = self:GetAttribute("state")
 		local buttonType, buttonAction = self:GetAttribute("type"), nil
@@ -302,6 +304,17 @@ function Generic:ButtonContentsChanged(state, kind, value)
 	self.state_actions[state] = value
 	-- TODO: Notify addon about this
 	self:UpdateAction(self)
+end
+
+function Generic:DisableDragNDrop(flag)
+	if InCombatLockdown() then
+		error("LibActionButton-1.0: You can only toggle DragNDrop out of combat!", 2)
+	end
+	if flag then
+		self:SetAttribute("LABdisableDragNDrop", true)
+	else
+		self:SetAttribute("LABdisableDragNDrop", nil)
+	end
 end
 
 -----------------------------------------------------------
