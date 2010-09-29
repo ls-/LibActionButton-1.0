@@ -130,14 +130,12 @@ function lib:CreateButton(id, name, header)
 	-- utility function to place a object on the cursor
 	button:SetAttribute("PickupButton", [[
 		local kind, value = ...
+		print("pickup", kind, value)
 		if kind == "empty" then
 			return "clear"
-		elseif kind == "action" or kind == "item" or kind == "macro" or kind == "pet" then
+		elseif kind == "action" or kind == "spell" or kind == "item" or kind == "macro" or kind == "pet" then
 			local actionType = (kind == "pet") and "petaction" or kind
 			return actionType, value
-		-- we need to return the spellbook id for spells
-		elseif kind == "spell" then
-			return kind, FindSpellBookSlotBySpellID(value), "spell"
 		else
 			print("LibActionButton-1.0: Unknown type: " .. tostring(kind))
 			return false
