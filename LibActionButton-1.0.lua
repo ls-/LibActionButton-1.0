@@ -130,7 +130,6 @@ function lib:CreateButton(id, name, header)
 	-- utility function to place a object on the cursor
 	button:SetAttribute("PickupButton", [[
 		local kind, value = ...
-		print("pickup", kind, value)
 		if kind == "empty" then
 			return "clear"
 		elseif kind == "action" or kind == "spell" or kind == "item" or kind == "macro" or kind == "pet" then
