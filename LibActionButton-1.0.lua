@@ -787,3 +787,20 @@ Spell.IsConsumableOrStackable = function(self) return IsConsumableSpell(self._st
 Spell.IsInRange               = function(self) return IsSpellInRange(FindSpellBookSlotBySpellID(self._state_action), "spell", "target") end -- needs spell book id as of 4.0.1.13066
 Spell.SetTooltip              = function(self) return GameTooltip:SetSpellByID(self._state_action) end
 Spell.GetSpellId              = function(self) return self._state_action end
+
+-----------------------------------------------------------
+--- Item Button
+Item.HasAction               = function(self) return true end
+Item.GetActionText           = function(self) return "" end
+Item.GetTexture              = function(self) return GetItemIcon(self._state_action) end
+Item.GetCount                = function(self) return GetItemCount(self._state_action, nil, true) end
+Item.GetCooldown             = function(self) return GetItemCooldown(self._state_action) end
+Item.IsAttack                = function(self) return nil end
+Item.IsEquipped              = function(self) return IsEquippedItem(self._state_action) end
+Item.IsCurrentlyActive       = function(self) return IsCurrentItem(self._state_action) end
+Item.IsAutoRepeat            = function(self) return nil end
+Item.IsUsable                = function(self) return IsUsableItem(self._state_action) end
+Item.IsConsumableOrStackable = function(self) return IsConsumableItem(self._state_action) end
+Item.IsInRange               = function(self) return IsItemInRange(self._state_action, "target") end
+Item.SetTooltip              = function(self) return GameTooltip:SetHyperlink(self._state_action) end
+Item.GetSpellId              = function(self) return nil end
