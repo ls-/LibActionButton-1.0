@@ -204,6 +204,8 @@ function lib:CreateButton(id, name, header)
 					print("invalid spell", kind, subtype)
 					return false
 				end
+			elseif kind == "item" and value then
+				value = format("item:%d", value)
 			end
 
 			-- Get the action that was on the button before
@@ -290,6 +292,18 @@ function Generic:SetState(state, kind, action)
 	if action ~= nil and type(action) ~= "number" and type(action) ~= "string" then
 		error("SetStateAction: invalid action data type, only strings and numbers allowed", 2)
 	end
+
+	if kind == "item" then
+		if tonumber(action) then
+			action = format("item:%s", action)
+		else
+			local itemString = string.match(itemLink, "^|c%x+|H(item[%d:]+)|h%[")
+			if itemString then
+				action = itemString
+			end
+		end
+	end
+
 	self.state_types[state] = kind
 	self.state_actions[state] = action
 	self:UpdateState(state)
@@ -446,6 +460,7 @@ function InitializeEventHandler()
 	-- With those two, do we still need the ACTIONBAR equivalents of them?
 	Generic:RegisterEvent("SPELL_UPDATE_COOLDOWN")
 	Generic:RegisterEvent("SPELL_UPDATE_USABLE")
+	Generic:RegisterEvent("PLAYER_EQUIPMENT_CHANGED")
 end
 
 function OnEvent(frame, event, arg1, ...)
@@ -527,6 +542,12 @@ function OnEvent(frame, event, arg1, ...)
 			local spellId = button:GetSpellId()
 			if spellId and spellId == arg1 then
 				ActionButton_HideOverlayGlow(button)
+			end
+		end
+	elseif event == "PLAYER_EQUIPMENT_CHANGED" then
+		for button in next, ActiveButtons do
+			if button._state_type == "item" then
+				Update(button)
 			end
 		end
 	end
@@ -790,11 +811,15 @@ Spell.GetSpellId              = function(self) return self._state_action end
 
 -----------------------------------------------------------
 --- Item Button
+local function getItemId(input)
+	return input:match("^item:(%d+)")
+end
+
 Item.HasAction               = function(self) return true end
 Item.GetActionText           = function(self) return "" end
 Item.GetTexture              = function(self) return GetItemIcon(self._state_action) end
 Item.GetCount                = function(self) return GetItemCount(self._state_action, nil, true) end
-Item.GetCooldown             = function(self) return GetItemCooldown(self._state_action) end
+Item.GetCooldown             = function(self) return GetItemCooldown(getItemId(self._state_action)) end
 Item.IsAttack                = function(self) return nil end
 Item.IsEquipped              = function(self) return IsEquippedItem(self._state_action) end
 Item.IsCurrentlyActive       = function(self) return IsCurrentItem(self._state_action) end
