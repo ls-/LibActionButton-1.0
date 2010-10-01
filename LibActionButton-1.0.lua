@@ -77,6 +77,9 @@ local ButtonRegistry, ActiveButtons = {}, {}
 local Update, UpdateButtonState, UpdateUsable, UpdateCount, UpdateCooldown, UpdateTooltip
 local StartFlash, StopFlash, UpdateFlash, UpdateHotkeys, UpdateRangeTimer, UpdateOverlayGlow
 
+-- HACK
+local UpdateSpellbookLookupTable
+
 local InitializeEventHandler, OnEvent, ForAllButtons
 
 --- Create a new action button.
@@ -188,12 +191,14 @@ function lib:CreateButton(id, name, header)
 			-- We get spell book ids from CursorInfo
 			-- Convert them to actual spell ids
 			if kind == "spell" then
-				-- TODO: This needs either an API update or a lookup table
-				local stype, sid -- = GetSpellBookItemInfo(value, subtype)
-				if stype == "SPELL" then
+				-- HACK: Use a lookup table to get the spell id from a spellbook slot
+				-- API update won't make it into 4.0 =(
+				local sid = G_lookupTable[tonumber(value)]
+				if sid then
 					value = sid
 				else
-					-- we don't accept anything else then spells from the spellbook
+					-- no valid spell
+					print("invalid spell", kind, subtype)
 					return false
 				end
 			end
@@ -238,6 +243,11 @@ function lib:CreateButton(id, name, header)
 		InitializeEventHandler()
 	end
 	ButtonRegistry[button] = true
+
+	-- HACK: Create spellbook -> spell id lookup table
+	-- Hopefully Blizzard can fix this with 4.1
+	-- Bug Iriel/alestane to get it done!
+	UpdateSpellbookLookupTable(button)
 
 	-- run an initial update
 	button:UpdateAction()
@@ -387,6 +397,13 @@ function InitializeEventHandler()
 end
 
 function OnEvent(frame, event, arg1, ...)
+	-- HACK: the dreaded spellbook -> spellid lookup table
+	-- With 4.0 changes, and all spells being in spellbook already, do we need to update this?
+	-- Maybe spells change id, even if no new ones are added?
+	if event == "LEARNED_SPELL_IN_TAB" then
+		ForAllButtons(UpdateSpellbookLookupTable)
+	end
+
 	if (event == "UNIT_INVENTORY_CHANGED" and arg1 == "player") or event == "LEARNED_SPELL_IN_TAB" then
 		local tooltipOwner = GameTooltip:GetOwner()
 		if ButtonRegistry[tooltipOwner] then
@@ -644,6 +661,27 @@ end
 
 function UpdateRangeTimer(self)
 	self.rangeTimer = -1
+end
+
+-- HACK: Create a spellbook -> spellid lookup table
+function UpdateSpellbookLookupTable(self)
+	local code = [[
+		G_lookupTable = newtable()
+	]]
+	for i=1,MAX_SPELLS do
+		local spellType, spellId = GetSpellBookItemInfo(i, BOOKTYPE_SPELL)
+		if spellId then
+			code = code .. format("G_lookupTable[%d] = %d\n", i, spellId)
+		end
+		if not spellType then break end
+	end
+	self:SetAttribute("LookupTable", code)
+	self.header:SetFrameRef("updateButton", self)
+	self.header:Execute([[
+		local frame = self:GetFrameRef("updateButton")
+		control:RunFor(frame, frame:GetAttribute("LookupTable"))
+	]])
+	self:SetAttribute("LookupTable", nil)
 end
 
 -----------------------------------------------------------
