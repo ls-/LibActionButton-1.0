@@ -121,7 +121,7 @@ function lib:CreateButton(id, name, header)
 		-- note that GetAttribute("state") is not guaranteed to return the current state in this method!
 		local state = ...
 		self:SetAttribute("state", state)
-		local type, action = (self:GetAttribute(format("labtype-%d", state)) or "empty"), self:GetAttribute(format("labaction-%d", state))
+		local type, action = (self:GetAttribute(format("labtype-%s", state)) or "empty"), self:GetAttribute(format("labaction-%s", state))
 
 		self:SetAttribute("type", type)
 		if type ~= "empty" then
@@ -168,8 +168,8 @@ function lib:CreateButton(id, name, header)
 
 		-- non-action fields need to change their type to empty
 		if type ~= "action" and type ~= "pet" then
-			self:SetAttribute(format("labtype-%d", state), "empty")
-			self:SetAttribute(format("labaction-%d", state), nil)
+			self:SetAttribute(format("labtype-%s", state), "empty")
+			self:SetAttribute(format("labaction-%s", state), nil)
 			-- update internal state
 			self:RunAttribute("UpdateState", state)
 			-- send a notification to the insecure code
@@ -261,15 +261,16 @@ end
 
 function Generic:ClearStates()
 	for state in pairs(self.state_types) do
-		self:SetAttribute(format("labtype-%d", state), nil)
-		self:SetAttribute(format("labaction-%d", state), nil)
+		self:SetAttribute(format("labtype-%s", state), nil)
+		self:SetAttribute(format("labaction-%s", state), nil)
 	end
 	wipe(self.state_types)
 	wipe(self.state_actions)
 end
 
 function Generic:SetState(state, kind, action)
-	state = tonumber(state)
+	if not state then state = self:GetAttribute("state") end
+	state = tostring(state)
 	-- we allow a nil kind for setting a empty state
 	if not kind then kind = "empty" end
 	if not type_meta_map[kind] then
@@ -287,10 +288,11 @@ function Generic:SetState(state, kind, action)
 end
 
 function Generic:UpdateState(state)
-	state = tonumber(state)
-	self:SetAttribute(format("labtype-%d", state), self.state_types[state])
-	self:SetAttribute(format("labaction-%d", state), self.state_actions[state])
-	if state ~= self:GetAttribute("state") then return end
+	if not state then state = self:GetAttribute("state") end
+	state = tostring(state)
+	self:SetAttribute(format("labtype-%s", state), self.state_types[state])
+	self:SetAttribute(format("labaction-%s", state), self.state_actions[state])
+	if state ~= tostring(self:GetAttribute("state")) then return end
 	if self.header then
 		self.header:SetFrameRef("updateButton", self)
 		self.header:Execute([[
@@ -305,7 +307,7 @@ end
 
 function Generic:GetAction(state)
 	if not state then state = self:GetAttribute("state") end
-	state = tonumber(state)
+	state = tostring(state)
 	return self.state_types[state] or "empty", self.state_actions[state]
 end
 
@@ -316,6 +318,7 @@ function Generic:UpdateAllStates()
 end
 
 function Generic:ButtonContentsChanged(state, kind, value)
+	state = tostring(state)
 	print("button contents changed", state, kind, value)
 	self.state_types[state] = kind or "emtpy"
 	self.state_actions[state] = value
