@@ -804,3 +804,21 @@ Item.IsConsumableOrStackable = function(self) return IsConsumableItem(self._stat
 Item.IsInRange               = function(self) return IsItemInRange(self._state_action, "target") end
 Item.SetTooltip              = function(self) return GameTooltip:SetHyperlink(self._state_action) end
 Item.GetSpellId              = function(self) return nil end
+
+-----------------------------------------------------------
+--- Macro Button
+-- TODO: map results of GetMacroSpell/GetMacroItem to proper results
+Macro.HasAction               = function(self) return true end
+Macro.GetActionText           = function(self) return (GetMacroInfo(self._state_action)) end
+Macro.GetTexture              = function(self) return (select(2, GetMacroInfo(self._state_action))) end
+Macro.GetCount                = function(self) return 0 end
+Macro.GetCooldown             = function(self) return nil end
+Macro.IsAttack                = function(self) return nil end
+Macro.IsEquipped              = function(self) return nil end
+Macro.IsCurrentlyActive       = function(self) return nil end
+Macro.IsAutoRepeat            = function(self) return nil end
+Macro.IsUsable                = function(self) return nil end
+Macro.IsConsumableOrStackable = function(self) return nil end
+Macro.IsInRange               = function(self) return nil end
+Macro.SetTooltip              = function(self) return nil end
+Macro.GetSpellId              = function(self) return nil end
