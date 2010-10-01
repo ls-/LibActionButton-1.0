@@ -101,6 +101,7 @@ function lib:CreateButton(id, name, header)
 	-- Frame Scripts
 	button:SetScript("OnEnter", Generic.OnEnter)
 	button:SetScript("OnLeave", Generic.OnLeave)
+	button:SetScript("PreClick", Generic.PreClick)
 	button:SetScript("PostClick", Generic.PostClick)
 
 	button.id = id
@@ -355,8 +356,49 @@ function Generic:OnLeave()
 	GameTooltip:Hide()
 end
 
+-- Insecure drag handler to allow clicking on the button with an action on the cursor
+-- to place it on the button. Like action buttons work.
+function Generic:PreClick()
+	if self._state_type == "action" or self._state_type == "pet"
+	   or InCombatLockdown() or self:GetAttribute("LABdisableDragNDrop")
+	then
+		return
+	end
+	-- check if there is actually something on the cursor
+	local kind, value, subtype = GetCursorInfo()
+	if not (kind and value) then return end
+	self._old_type = self._state_type
+	if self._state_type and self._state_type ~= "empty" then
+		self._old_type = self._state_type
+		self:SetAttribute("type", "empty")
+		--self:SetState(nil, "empty", nil)
+	end
+	self._receiving_drag = true
+end
+
+local function formatHelper(input)
+	if type(input) == "string" then
+		return format("%q", input)
+	else
+		return tostring(input)
+	end
+end
+
 function Generic:PostClick()
 	UpdateButtonState(self)
+	if self._receiving_drag and not InCombatLockdown() then
+		if self._old_type then
+			self:SetAttribute("type", self._old_type)
+			self._old_type = nil
+		end
+		local a, b, c = GetCursorInfo()
+		self.header:SetFrameRef("updateButton", self)
+		self.header:Execute(format([[
+			local frame = self:GetFrameRef("updateButton")
+			control:RunFor(frame, frame:GetAttribute("OnReceiveDrag"), %s, %s, %s)
+		]], formatHelper(a), formatHelper(b), formatHelper(c)))
+	end
+	self._receiving_drag = nil
 end
 
 -----------------------------------------------------------
