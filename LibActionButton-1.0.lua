@@ -152,10 +152,8 @@ function lib:CreateButton(id, name, header)
 		end
 	]])
 
-	-- Wrapped OnDragStart(self, button, kind, value, ...)
-	header:WrapScript(button, "OnDragStart", [[
+	button:SetAttribute("OnDragStart", [[
 		if self:GetAttribute("LABdisableDragNDrop") then return false end
-		local subtype = ...
 		local state = self:GetAttribute("state")
 		local type = self:GetAttribute("type")
 		-- if the button is empty, we can't drag anything off it
@@ -179,10 +177,14 @@ function lib:CreateButton(id, name, header)
 		return self:RunAttribute("PickupButton", type, action)
 	]])
 
-	-- Wrapped OnReceiveDrag(self, button, kind, value, ...)
-	header:WrapScript(button, "OnReceiveDrag", [[
+	-- Wrapped OnDragStart(self, button, kind, value, ...)
+	header:WrapScript(button, "OnDragStart", [[
+		return self:RunAttribute("OnDragStart")
+	]])
+
+	button:SetAttribute("OnReceiveDrag", [[
 		if self:GetAttribute("LABdisableDragNDrop") then return false end
-		local subtype = ...
+		local kind, value, subtype = ...
 		local state = self:GetAttribute("state")
 		local buttonType, buttonAction = self:GetAttribute("type"), nil
 		-- action buttons can do their magic themself
@@ -223,6 +225,11 @@ function lib:CreateButton(id, name, header)
 			buttonAction = self:GetAttribute("action")
 		end
 		return self:RunAttribute("PickupButton", buttonType, buttonAction)
+	]])
+
+	-- Wrapped OnReceiveDrag(self, button, kind, value, ...)
+	header:WrapScript(button, "OnReceiveDrag", [[
+		return self:RunAttribute("OnReceiveDrag", kind, value, ...)
 	]])
 
 	-- Store all sub frames on the button object for easier access
