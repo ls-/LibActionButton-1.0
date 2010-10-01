@@ -362,6 +362,29 @@ end
 -----------------------------------------------------------
 --- frame scripts
 
+local function PickupAny(kind, target, detail, ...)
+	if (kind == "clear") then
+		ClearCursor();
+		kind, target, detail = target, detail, ...;
+	end
+
+	if kind == 'action' then
+		PickupAction(target);
+	elseif kind == 'item' then
+		PickupItem(target)
+	elseif kind == 'macro' then
+		PickupMacro(target)
+	elseif kind == 'petaction' then
+		PickupPetAction(target)
+	elseif kind == 'spell' then
+		PickupSpell(target)
+	elseif kind == 'companion' then
+		PickupCompanion(target, detail)
+	elseif kind == 'equipmentset' then
+		PickupEquipmentSet(target);
+	end
+end
+
 function Generic:OnEnter()
 	UpdateTooltip(self)
 end
@@ -405,12 +428,14 @@ function Generic:PostClick()
 			self:SetAttribute("type", self._old_type)
 			self._old_type = nil
 		end
+		local oldType, oldAction = self._state_type, self._state_action
 		local a, b, c = GetCursorInfo()
 		self.header:SetFrameRef("updateButton", self)
 		self.header:Execute(format([[
 			local frame = self:GetFrameRef("updateButton")
 			control:RunFor(frame, frame:GetAttribute("OnReceiveDrag"), %s, %s, %s)
 		]], formatHelper(a), formatHelper(b), formatHelper(c)))
+		PickupAny("clear", oldType, oldAction)
 	end
 	self._receiving_drag = nil
 end
