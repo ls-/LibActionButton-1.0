@@ -66,7 +66,7 @@ local Macro_MT = {__index = Macro}
 local type_meta_map = {
 	empty  = Generic_MT,
 	action = Action_MT,
-	pet    = PetAction_MT,
+	--pet    = PetAction_MT,
 	spell  = Spell_MT,
 	item   = Item_MT,
 	macro  = Macro_MT
