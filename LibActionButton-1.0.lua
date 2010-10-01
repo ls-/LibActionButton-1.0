@@ -362,14 +362,15 @@ end
 -----------------------------------------------------------
 --- frame scripts
 
+-- copied (and adjusted) from SecureHandlers.lua
 local function PickupAny(kind, target, detail, ...)
-	if (kind == "clear") then
-		ClearCursor();
-		kind, target, detail = target, detail, ...;
+	if kind == "clear" then
+		ClearCursor()
+		kind, target, detail = target, detail, ...
 	end
 
 	if kind == 'action' then
-		PickupAction(target);
+		PickupAction(target)
 	elseif kind == 'item' then
 		PickupItem(target)
 	elseif kind == 'macro' then
@@ -381,7 +382,7 @@ local function PickupAny(kind, target, detail, ...)
 	elseif kind == 'companion' then
 		PickupCompanion(target, detail)
 	elseif kind == 'equipmentset' then
-		PickupEquipmentSet(target);
+		PickupEquipmentSet(target)
 	end
 end
 
