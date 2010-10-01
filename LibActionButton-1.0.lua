@@ -559,7 +559,7 @@ function Update(self)
 		UpdateFlash(self)
 	else
 		ActiveButtons[self] = nil
-	-- TODO: Hide button
+		-- TODO: Hide button
 		self.cooldown:Hide()
 	end
 
@@ -779,7 +779,7 @@ Spell.GetTexture              = function(self) return GetSpellTexture(self._stat
 Spell.GetCount                = function(self) return GetSpellCount(self._state_action) end
 Spell.GetCooldown             = function(self) return GetSpellCooldown(self._state_action) end
 Spell.IsAttack                = function(self) return IsAttackSpell(FindSpellBookSlotBySpellID(self._state_action), "spell") end -- needs spell book id as of 4.0.1.13066
-Spell.IsEquipped              = function(self) return false end
+Spell.IsEquipped              = function(self) return nil end
 Spell.IsCurrentlyActive       = function(self) return IsCurrentSpell(self._state_action) end
 Spell.IsAutoRepeat            = function(self) return IsAutoRepeatSpell(FindSpellBookSlotBySpellID(self._state_action), "spell") end -- needs spell book id as of 4.0.1.13066
 Spell.IsUsable                = function(self) return IsUsableSpell(self._state_action) end
