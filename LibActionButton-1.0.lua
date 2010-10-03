@@ -92,7 +92,7 @@ local DefaultConfig = {
 -- @param id Internal id of the button (not used by LibActionButton-1.0, only for tracking inside the calling addon)
 -- @param name Name of the button frame to be created (not used by LibActionButton-1.0 aside from naming the frame)
 -- @param header Header that drives these action buttons (if any)
-function lib:CreateButton(id, name, header)
+function lib:CreateButton(id, name, header, config)
 	if type(name) ~= "string" then
 		error("Usage: CreateButton(id, name. header): Buttons must have a valid name!", 2)
 	end
@@ -119,8 +119,6 @@ function lib:CreateButton(id, name, header)
 	-- Mapping of state -> action
 	button.state_types = {}
 	button.state_actions = {}
-
-	button.config = DefaultConfig
 
 	-- Store the LAB Version that created this button for debugging
 	button.__LAB_Version = MINOR_VERSION
@@ -272,6 +270,8 @@ function lib:CreateButton(id, name, header)
 	-- Hopefully Blizzard can fix this with 4.1
 	-- Bug Iriel/alestane to get it done!
 	UpdateSpellbookLookupTable(button)
+
+	button:UpdateConfig(config)
 
 	-- run an initial update
 	button:UpdateAction()
@@ -459,6 +459,21 @@ function Generic:PostClick()
 end
 
 -----------------------------------------------------------
+--- configuration
+
+function Generic:UpdateConfig(config)
+	if not self.config then self.config = {} end
+	for k, v in pairs(DefaultConfig) do
+		self.config[k] = config[k] or DefaultConfig[k]
+	end
+
+	if self.config.outOfRangeColoring ~= "hotkey" then
+		self.hotkey:SetVertexColor(0.6, 0.6, 0.6)
+	end
+	UpdateUsable(self)
+end
+
+-----------------------------------------------------------
 --- event handler
 
 function ForAllButtons(method, onlyWithAction, ...)
@@ -636,9 +651,9 @@ function OnUpdate(_, elapsed)
 						end
 					else
 						if valid == 0 then
-							count:SetVertexColor(0.8, 0.1, 0.1)
+							hotkey:SetVertexColor(0.8, 0.1, 0.1)
 						else
-							count:SetVertexColor(0.6, 0.6, 0.6)
+							hotkey:SetVertexColor(0.6, 0.6, 0.6)
 						end
 					end
 				end
