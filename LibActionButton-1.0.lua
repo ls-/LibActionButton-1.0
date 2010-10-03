@@ -82,7 +82,11 @@ local StartFlash, StopFlash, UpdateFlash, UpdateHotkeys, UpdateRangeTimer, Updat
 -- HACK
 local UpdateSpellbookLookupTable
 
-local InitializeEventHandler, OnEvent, ForAllButtons
+local InitializeEventHandler, OnEvent, ForAllButtons, OnUpdate
+
+local DefaultConfig = {
+	outOfRangeColoring = "button"
+}
 
 --- Create a new action button.
 -- @param id Internal id of the button (not used by LibActionButton-1.0, only for tracking inside the calling addon)
@@ -115,6 +119,8 @@ function lib:CreateButton(id, name, header)
 	-- Mapping of state -> action
 	button.state_types = {}
 	button.state_actions = {}
+
+	button.config = DefaultConfig
 
 	-- Store the LAB Version that created this button for debugging
 	button.__LAB_Version = MINOR_VERSION
@@ -498,6 +504,9 @@ function InitializeEventHandler()
 	Generic:RegisterEvent("SPELL_UPDATE_COOLDOWN")
 	Generic:RegisterEvent("SPELL_UPDATE_USABLE")
 	Generic:RegisterEvent("PLAYER_EQUIPMENT_CHANGED")
+
+	Generic:Show()
+	Generic:SetScript("OnUpdate", OnUpdate)
 end
 
 function OnEvent(frame, event, arg1, ...)
@@ -530,7 +539,7 @@ function OnEvent(frame, event, arg1, ...)
 	elseif event == "UPDATE_BINDINGS" then
 		ForAllButtons(UpdateHotkeys)
 	elseif event == "PLAYER_TARGET_CHANGED" then
-		ForAllButtons(UpdateRangeTimer, true)
+		UpdateRangeTimer()
 	elseif (event == "ACTIONBAR_UPDATE_STATE") or
 		((event == "UNIT_ENTERED_VEHICLE" or event == "UNIT_EXITED_VEHICLE") and (arg1 == "player")) or
 		((event == "COMPANION_UPDATE") and (arg1 == "MOUNT")) then
@@ -586,6 +595,62 @@ function OnEvent(frame, event, arg1, ...)
 			if button._state_type == "item" then
 				Update(button)
 			end
+		end
+	end
+end
+
+local flashTime = 0
+local rangeTimer = -1
+function OnUpdate(_, elapsed)
+	flashTime = flashTime - elapsed
+	rangeTimer = rangeTimer - elapsed
+	-- Run the loop only when there is something to update
+	if rangeTimer <= 0 or flashTime <= 0 then
+		for button in next, ActiveButtons do
+			-- Flashing
+			if button.flashing == 1 and flashTime <= 0 then
+				if button.flash:IsShown() then
+					button.flash:Hide()
+				else
+					button.flash:Show()
+				end
+			end
+
+			-- Range
+			if rangeTimer <= 0 then
+				local inRange = button:IsInRange()
+				button.outOfRange = (inRange == 0)
+				if button.config.outOfRangeColoring == "button" then
+					UpdateUsable(button)
+				elseif button.config.outOfRangeColoring == "hotkey" then
+					local hotkey = button.hotkey
+					if hotkey:GetText() == RANGE_INDICATOR then
+						if inRange == 0 then
+							hotkey:Show()
+							hotkey:SetVertexColor(0.8, 0.1, 0.1)
+						elseif inRange == 1 then
+							hotkey:Show()
+							hotkey:SetVertexColor(0.6, 0.6, 0.6)
+						else
+							hotkey:Hide()
+						end
+					else
+						if valid == 0 then
+							count:SetVertexColor(0.8, 0.1, 0.1)
+						else
+							count:SetVertexColor(0.6, 0.6, 0.6)
+						end
+					end
+				end
+			end
+		end
+
+		-- Update values
+		if flashTime <= 0 then
+			flashTime = flashTime + ATTACK_BUTTON_FLASH_TIME
+		end
+		if rangeTimer <= 0 then
+			rangeTimer = TOOLTIP_UPDATE_TIME
 		end
 	end
 end
@@ -689,18 +754,22 @@ function UpdateButtonState(self)
 end
 
 function UpdateUsable(self)
-	local isUsable, notEnoughMana = self:IsUsable()
 	-- TODO: make the colors configurable
 	-- TODO: allow disabling of the whole recoloring
-	if isUsable then
-		self.icon:SetVertexColor(1.0, 1.0, 1.0)
-		self.normalTexture:SetVertexColor(1.0, 1.0, 1.0)
-	elseif notEnoughMana then
-		self.icon:SetVertexColor(0.5, 0.5, 1.0)
-		self.normalTexture:SetVertexColor(0.5, 0.5, 1.0)
+	if self.config.outOfRangeColoring == "button" and self.outOfRange then
+		self.icon:SetVertexColor(0.8, 0.1, 0.1)
 	else
-		self.icon:SetVertexColor(0.4, 0.4, 0.4)
-		self.normalTexture:SetVertexColor(1.0, 1.0, 1.0)
+		local isUsable, notEnoughMana = self:IsUsable()
+		if isUsable then
+			self.icon:SetVertexColor(1.0, 1.0, 1.0)
+			--self.normalTexture:SetVertexColor(1.0, 1.0, 1.0)
+		elseif notEnoughMana then
+			self.icon:SetVertexColor(0.5, 0.5, 1.0)
+			--self.normalTexture:SetVertexColor(0.5, 0.5, 1.0)
+		else
+			self.icon:SetVertexColor(0.4, 0.4, 0.4)
+			--self.normalTexture:SetVertexColor(1.0, 1.0, 1.0)
+		end
 	end
 end
 
@@ -724,7 +793,7 @@ end
 
 function StartFlash(self)
 	self.flashing = 1
-	self.flashtime = 0
+	flashTime = 0
 	UpdateButtonState(self)
 end
 
@@ -778,8 +847,8 @@ function UpdateOverlayGlow(self)
 	end
 end
 
-function UpdateRangeTimer(self)
-	self.rangeTimer = -1
+function UpdateRangeTimer()
+	rangeTimer = -1
 end
 
 -- HACK: Create a spellbook -> spellid lookup table
