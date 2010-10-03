@@ -144,9 +144,11 @@ function lib:CreateButton(id, name, header)
 		local kind, value = ...
 		if kind == "empty" then
 			return "clear"
-		elseif kind == "action" or kind == "spell" or kind == "item" or kind == "macro" or kind == "pet" then
+		elseif kind == "action" or kind == "pet" then
 			local actionType = (kind == "pet") and "petaction" or kind
-			return "clear", actionType, value
+			return actionType, value
+		elseif kind == "spell" or kind == "item" or kind == "macro" then
+			return "clear", kind, value
 		else
 			print("LibActionButton-1.0: Unknown type: " .. tostring(kind))
 			return false
