@@ -78,6 +78,7 @@ local ButtonRegistry, ActiveButtons = {}, {}
 
 local Update, UpdateButtonState, UpdateUsable, UpdateCount, UpdateCooldown, UpdateTooltip
 local StartFlash, StopFlash, UpdateFlash, UpdateHotkeys, UpdateRangeTimer, UpdateOverlayGlow
+local ShowGrid, HideGrid
 
 -- HACK
 local UpdateSpellbookLookupTable
@@ -548,9 +549,9 @@ function OnEvent(frame, event, arg1, ...)
 	elseif event == "ACTIONBAR_PAGE_CHANGED" or event == "UPDATE_BONUS_ACTIONBAR" then
 		-- TODO: Are these even needed?
 	elseif event == "ACTIONBAR_SHOWGRID" then
-		-- TODO
+		ShowGrid()
 	elseif event == "ACTIONBAR_HIDEGRID" then
-		-- TODO
+		HideGrid()
 	elseif event == "UPDATE_BINDINGS" then
 		ForAllButtons(UpdateHotkeys)
 	elseif event == "PLAYER_TARGET_CHANGED" then
@@ -670,6 +671,31 @@ function OnUpdate(_, elapsed)
 	end
 end
 
+local gridCounter = 0
+function ShowGrid()
+	gridCounter = gridCounter + 1
+	if gridCounter >= 1 then
+		for button in next, ButtonRegistry do
+			if button:IsShown() then
+				button:SetAlpha(1.0)
+			end
+		end
+	end
+end
+
+function HideGrid()
+	if gridCounter > 0 then
+		gridCounter = gridCounter - 1
+	end
+	if gridCounter == 0 then
+		for button in next, ButtonRegistry do
+			if button:IsShown() and not button:HasAction() then
+				button:SetAlpha(0.0)
+			end
+		end
+	end
+end
+
 -----------------------------------------------------------
 --- KeyBound integration
 
@@ -699,14 +725,16 @@ end
 function Update(self)
 	if self:HasAction() then
 		ActiveButtons[self] = true
-		-- TODO: Show button
+		self:SetAlpha(1.0)
 		UpdateButtonState(self)
 		UpdateUsable(self)
 		UpdateCooldown(self)
 		UpdateFlash(self)
 	else
 		ActiveButtons[self] = nil
-		-- TODO: Hide button
+		if gridCounter == 0 then
+			self:SetAlpha(0.0)
+		end
 		self.cooldown:Hide()
 	end
 
