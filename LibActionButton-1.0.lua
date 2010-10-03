@@ -282,6 +282,15 @@ function lib:CreateButton(id, name, header, config)
 end
 
 -----------------------------------------------------------
+--- utility
+
+function Generic:ClearSetPoint(...)
+	self:ClearAllPoints()
+	self:SetPoint(...)
+end
+
+
+-----------------------------------------------------------
 --- state management
 
 function Generic:ClearStates()
@@ -465,7 +474,7 @@ end
 function Generic:UpdateConfig(config)
 	if not self.config then self.config = {} end
 	for k, v in pairs(DefaultConfig) do
-		self.config[k] = config[k] or DefaultConfig[k]
+		self.config[k] = config and config[k] or DefaultConfig[k]
 	end
 
 	if self.config.outOfRangeColoring ~= "hotkey" then
