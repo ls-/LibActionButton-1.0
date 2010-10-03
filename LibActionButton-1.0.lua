@@ -35,6 +35,8 @@ if not LibStub then error(MAJOR_VERSION .. " requires LibStub.") end
 local lib = LibStub:NewLibrary(MAJOR_VERSION, MINOR_VERSION)
 if not lib then return end
 
+local KeyBound = LibStub("LibKeyBound-1.0", true)
+
 -- This library does on purpose not even try to migrate previous buttons to the new lib,
 -- as their layout might change, and we have no idea in what state they would be.
 -- Instead, assume that all addons are actually loaded before they start creating buttons
@@ -92,6 +94,10 @@ function lib:CreateButton(id, name, header)
 	end
 	if not header then
 		error("Usage: CreateButton(id, name, header): Buttons without a secure header are not yet supported!", 2)
+	end
+
+	if not KeyBound then
+		KeyBound = LibStub("LibKeyBound-1.0", true)
 	end
 
 	local button = setmetatable(CreateFrame("CheckButton", name, UIParent, "SecureActionButtonTemplate, ActionButtonTemplate"), Generic_MT)
@@ -390,6 +396,9 @@ end
 
 function Generic:OnEnter()
 	UpdateTooltip(self)
+	if KeyBound then
+		KeyBound:Set(self)
+	end
 end
 
 function Generic:OnLeave()
@@ -579,6 +588,15 @@ function OnEvent(frame, event, arg1, ...)
 			end
 		end
 	end
+end
+
+-----------------------------------------------------------
+--- KeyBound integration
+
+function Generic:GetHotkey()
+	if not KeyBound then return end
+	local key = GetBindingKey("CLICK "..self:GetName()..":LeftButton")
+	return key and KeyBound:ToShortKey(key)
 end
 
 -----------------------------------------------------------
