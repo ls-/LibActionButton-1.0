@@ -135,7 +135,6 @@ function lib:CreateButton(id, name, header, config)
 	-- secure UpdateState(self, state)
 	-- update the type and action of the button based on the state
 	button:SetAttribute("UpdateState", [[
-		-- note that GetAttribute("state") is not guaranteed to return the current state in this method!
 		local state = ...
 		self:SetAttribute("state", state)
 		local type, action = (self:GetAttribute(format("labtype-%s", state)) or "empty"), self:GetAttribute(format("labaction-%s", state))
