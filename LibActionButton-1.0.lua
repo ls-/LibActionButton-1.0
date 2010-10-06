@@ -146,6 +146,10 @@ function lib:CreateButton(id, name, header, config)
 			self:SetAttribute(action_field, action)
 			self:SetAttribute("action_field", action_field)
 		end
+		local onStateChanged = self:GetAttribute("OnStateChanged")
+		if onStateChanged then
+			self:Run(onStateChanged, state, type, action)
+		end
 	]])
 
 	-- this function is invoked by the header when the state changes
