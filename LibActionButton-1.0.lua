@@ -383,6 +383,14 @@ function Generic:DisableDragNDrop(flag)
 	end
 end
 
+function Generic:AddToButtonFacade(group)
+	if type(group) ~= "table" or type(group.AddButton) ~= "function" then
+		error("LibActionButton-1.0:AddToButtonFacade: You need to supply a proper group to use!", 2)
+	end
+	group:AddButton(self)
+	self.LBFSkinned = true
+end
+
 -----------------------------------------------------------
 --- frame scripts
 
