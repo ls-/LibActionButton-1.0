@@ -109,7 +109,7 @@ function lib:CreateButton(id, name, header, config)
 		KeyBound = LibStub("LibKeyBound-1.0", true)
 	end
 
-	local button = setmetatable(CreateFrame("CheckButton", name, UIParent, "SecureActionButtonTemplate, ActionButtonTemplate"), Generic_MT)
+	local button = setmetatable(CreateFrame("CheckButton", name, header, "SecureActionButtonTemplate, ActionButtonTemplate"), Generic_MT)
 	button:RegisterForDrag("LeftButton", "RightButton")
 	button:RegisterForClicks("AnyUp")
 
@@ -128,8 +128,8 @@ function lib:CreateButton(id, name, header, config)
 	-- Store the LAB Version that created this button for debugging
 	button.__LAB_Version = MINOR_VERSION
 
-	-- just in case we're not run by a header, default to state 1
-	button:SetAttribute("state", 1)
+	-- just in case we're not run by a header, default to state 0
+	button:SetAttribute("state", 0)
 
 	-- secure UpdateState(self, state)
 	-- update the type and action of the button based on the state
