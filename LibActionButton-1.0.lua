@@ -486,12 +486,26 @@ end
 -----------------------------------------------------------
 --- configuration
 
+local function merge(target, source, default)
+	for k,v in pairs(default) do
+		if type(v) ~= "table" then
+			target[k] = source and source[k] or v
+		else
+			if type(target[k]) ~= "table" then target[k] = {} else wipe(target[k]) end
+			merge(target[k], type(source) == "table" and source[k], v)
+		end
+	end
+	return target
+end
+
 function Generic:UpdateConfig(config)
+	if config and type(config) ~= "table" then
+		error("LibActionButton-1.0: UpdateConfig requires a valid configuration!", 2)
+	end
 	local oldconfig = self.config
 	if not self.config then self.config = {} end
-	for k, v in pairs(DefaultConfig) do
-		self.config[k] = config and config[k] or DefaultConfig[k]
-	end
+	-- merge the two configs
+	merge(self.config, config, DefaultConfig)
 
 	if self.config.outOfRangeColoring == "button" or (oldconfig and oldconfig.outOfRangeColoring == "button") then
 		UpdateUsable(self)
