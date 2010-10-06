@@ -484,16 +484,20 @@ end
 --- configuration
 
 function Generic:UpdateConfig(config)
+	local oldconfig = self.config
 	if not self.config then self.config = {} end
 	for k, v in pairs(DefaultConfig) do
 		self.config[k] = config and config[k] or DefaultConfig[k]
 	end
 
-	self.outOfRange = nil
-	if self.config.outOfRangeColoring ~= "hotkey" then
+	if self.config.outOfRangeColoring == "button" or (oldconfig and oldconfig.outOfRangeColoring == "button") then
+		UpdateUsable(self)
+	elseif self.config.outOfRangeColoring == "hotkey" then
+		self.outOfRange = nil
+	end
+	if oldconfig and oldconfig.outOfRangeColoring == "hotkey" and self.config.outOfRangeColoring ~= "hotkey" then
 		self.hotkey:SetVertexColor(0.6, 0.6, 0.6)
 	end
-	UpdateUsable(self)
 end
 
 -----------------------------------------------------------
