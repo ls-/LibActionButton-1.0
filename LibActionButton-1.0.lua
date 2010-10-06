@@ -86,7 +86,11 @@ local UpdateSpellbookLookupTable
 local InitializeEventHandler, OnEvent, ForAllButtons, OnUpdate
 
 local DefaultConfig = {
-	outOfRangeColoring = "button"
+	outOfRangeColoring = "button",
+	colors = {
+		range = { 0.8, 0.1, 0.1 },
+		mana = { 0.5, 0.5, 1.0 }
+	}
 }
 
 --- Create a new action button.
@@ -485,6 +489,7 @@ function Generic:UpdateConfig(config)
 		self.config[k] = config and config[k] or DefaultConfig[k]
 	end
 
+	self.outOfRange = nil
 	if self.config.outOfRangeColoring ~= "hotkey" then
 		self.hotkey:SetVertexColor(0.6, 0.6, 0.6)
 	end
@@ -652,24 +657,22 @@ function OnUpdate(_, elapsed)
 			-- Range
 			if rangeTimer <= 0 then
 				local inRange = button:IsInRange()
+				local oldRange = button.outOfRange
 				button.outOfRange = (inRange == 0)
-				if button.config.outOfRangeColoring == "button" then
-					UpdateUsable(button)
-				elseif button.config.outOfRangeColoring == "hotkey" then
-					local hotkey = button.hotkey
-					if hotkey:GetText() == RANGE_INDICATOR then
-						if inRange == 0 then
-							hotkey:Show()
-							hotkey:SetVertexColor(0.8, 0.1, 0.1)
-						elseif inRange == 1 then
-							hotkey:Show()
-							hotkey:SetVertexColor(0.6, 0.6, 0.6)
-						else
-							hotkey:Hide()
+				if oldRange ~= button.outOfRange then
+					if button.config.outOfRangeColoring == "button" then
+						UpdateUsable(button)
+					elseif button.config.outOfRangeColoring == "hotkey" then
+						local hotkey = button.hotkey
+						if hotkey:GetText() == RANGE_INDICATOR then
+							if inRange then
+								hotkey:Show()
+							else
+								hotkey:Hide()
+							end
 						end
-					else
 						if valid == 0 then
-							hotkey:SetVertexColor(0.8, 0.1, 0.1)
+							hotkey:SetVertexColor(unpack(button.config.colors.range))
 						else
 							hotkey:SetVertexColor(0.6, 0.6, 0.6)
 						end
@@ -817,14 +820,14 @@ function UpdateUsable(self)
 	-- TODO: make the colors configurable
 	-- TODO: allow disabling of the whole recoloring
 	if self.config.outOfRangeColoring == "button" and self.outOfRange then
-		self.icon:SetVertexColor(0.8, 0.1, 0.1)
+		self.icon:SetVertexColor(unpack(self.config.colors.range))
 	else
 		local isUsable, notEnoughMana = self:IsUsable()
 		if isUsable then
 			self.icon:SetVertexColor(1.0, 1.0, 1.0)
 			--self.normalTexture:SetVertexColor(1.0, 1.0, 1.0)
 		elseif notEnoughMana then
-			self.icon:SetVertexColor(0.5, 0.5, 1.0)
+			self.icon:SetVertexColor(unpack(self.config.colors.mana))
 			--self.normalTexture:SetVertexColor(0.5, 0.5, 1.0)
 		else
 			self.icon:SetVertexColor(0.4, 0.4, 0.4)
