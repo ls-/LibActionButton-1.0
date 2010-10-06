@@ -87,6 +87,7 @@ local InitializeEventHandler, OnEvent, ForAllButtons, OnUpdate
 
 local DefaultConfig = {
 	outOfRangeColoring = "button",
+	tooltip = "enabled",
 	colors = {
 		range = { 0.8, 0.1, 0.1 },
 		mana = { 0.5, 0.5, 1.0 }
@@ -423,7 +424,9 @@ local function PickupAny(kind, target, detail, ...)
 end
 
 function Generic:OnEnter()
-	UpdateTooltip(self)
+	if self.config.tooltip ~= "disabled" and (self.config.tooltip ~= "nocombat" or not InCombatLockdown()) then
+		UpdateTooltip(self)
+	end
 	if KeyBound then
 		KeyBound:Set(self)
 	end
