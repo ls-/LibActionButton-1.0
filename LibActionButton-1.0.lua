@@ -91,6 +91,10 @@ local DefaultConfig = {
 	colors = {
 		range = { 0.8, 0.1, 0.1 },
 		mana = { 0.5, 0.5, 1.0 }
+	},
+	hideElements = {
+		macro = false,
+		hotkey = false,
 	}
 }
 
@@ -522,6 +526,13 @@ function Generic:UpdateConfig(config)
 	elseif oldconfig and oldconfig.outOfRangeColoring == "hotkey" then
 		self.hotkey:SetVertexColor(0.6, 0.6, 0.6)
 	end
+
+	if self.config.hideElements.macro then
+		self.actionName:Hide()
+	else
+		self.actionName:Show()
+	end
+	UpdateHotkeys(self)
 end
 
 -----------------------------------------------------------
@@ -918,7 +929,7 @@ end
 
 function UpdateHotkeys(self)
 	local key = self:GetHotkey()
-	if not key or key == "" then
+	if not key or key == "" or self.config.hideElements.hotkey then
 		self.hotkey:SetText(RANGE_INDICATOR)
 		self.hotkey:SetPoint("TOPLEFT", self, "TOPLEFT", 1, - 2)
 		self.hotkey:Hide()
