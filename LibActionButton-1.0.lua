@@ -78,7 +78,7 @@ local ButtonRegistry, ActiveButtons = {}, {}
 
 local Update, UpdateButtonState, UpdateUsable, UpdateCount, UpdateCooldown, UpdateTooltip
 local StartFlash, StopFlash, UpdateFlash, UpdateHotkeys, UpdateRangeTimer, UpdateOverlayGlow
-local ShowGrid, HideGrid
+local UpdateFlyout, ShowGrid, HideGrid
 
 -- HACK
 local UpdateSpellbookLookupTable
@@ -263,9 +263,9 @@ function lib:CreateButton(id, name, header, config)
 	-- Store all sub frames on the button object for easier access
 	button.icon               = _G[name .. "Icon"]
 	button.flash              = _G[name .. "Flash"]
-	button.flyoutBorder       = _G[name .. "FlyoutBorder"]
-	button.flyoutBorderShadow = _G[name .. "FlyoutBorderShadow"]
-	button.flyoutArrow        = _G[name .. "FlyoutArrow"]
+	button.FlyoutBorder       = _G[name .. "FlyoutBorder"]
+	button.FlyoutBorderShadow = _G[name .. "FlyoutBorderShadow"]
+	button.FlyoutArrow        = _G[name .. "FlyoutArrow"]
 	button.hotkey             = _G[name .. "HotKey"]
 	button.count              = _G[name .. "Count"]
 	button.actionName         = _G[name .. "Name"]
@@ -836,7 +836,8 @@ function Update(self)
 
 	UpdateCount(self)
 
-	-- TODO: Update flyout
+	UpdateFlyout(self)
+
 	UpdateOverlayGlow(self)
 
 	if GameTooltip:GetOwner() == self then
@@ -947,6 +948,43 @@ function UpdateOverlayGlow(self)
 	else
 		ActionButton_HideOverlayGlow(self)
 	end
+end
+
+-- Hook UpdateFlyout so we can use the blizzy templates
+local old_ActionButton_UpdateFlyout = ActionButton_UpdateFlyout
+ActionButton_UpdateFlyout = function(self, ...)
+	if ButtonRegistry[self] then
+		return UpdateFlyout(self)
+	else
+		return old_ActionButton_UpdateFlyout(self, ...)
+	end
+end
+
+function UpdateFlyout(self)
+	if self._state_type == "action" then
+		-- based on ActionButton_UpdateFlyout in ActionButton.lua
+		-- disabled FlyoutBorder/BorderShadow, those are not handled by LBF and look terrible
+		local actionType = GetActionInfo(self._state_action)
+		if actionType == "flyout" then
+			-- Update border and determine arrow position
+			local arrowDistance
+			if (SpellFlyout and SpellFlyout:IsShown() and SpellFlyout:GetParent() == self) or GetMouseFocus() == self then
+				arrowDistance = 5
+			else
+				arrowDistance = 2
+			end
+
+			-- Update arrow
+			self.FlyoutArrow:Show()
+			self.FlyoutArrow:ClearAllPoints()
+			self.FlyoutArrow:SetPoint("TOP", self, "TOP", 0, arrowDistance)
+			SetClampedTextureRotation(self.FlyoutArrow, 0)
+
+			-- return here, otherwise flyout is hidden
+			return
+		end
+	end
+	self.FlyoutArrow:Hide()
 end
 
 function UpdateRangeTimer()
