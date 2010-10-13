@@ -175,7 +175,7 @@ function lib:CreateButton(id, name, header, config)
 	]])
 
 	button:SetAttribute("OnDragStart", [[
-		if self:GetAttribute("LABdisableDragNDrop") then return false end
+		if (self:GetAttribute("buttonlock") and not IsModifiedClick("PICKUPACTION")) or self:GetAttribute("LABdisableDragNDrop") then return false end
 		local state = self:GetAttribute("state")
 		local type = self:GetAttribute("type")
 		-- if the button is empty, we can't drag anything off it
