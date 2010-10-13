@@ -29,7 +29,7 @@ SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 
 ]]
 local MAJOR_VERSION = "LibActionButton-1.0"
-local MINOR_VERSION = 3
+local MINOR_VERSION = 4
 
 if not LibStub then error(MAJOR_VERSION .. " requires LibStub.") end
 local lib = LibStub:NewLibrary(MAJOR_VERSION, MINOR_VERSION)
@@ -212,6 +212,7 @@ function lib:CreateButton(id, name, header, config)
 	button:SetAttribute("OnReceiveDrag", [[
 		if self:GetAttribute("LABdisableDragNDrop") then return false end
 		local kind, value, subtype = ...
+		if not kind or not value then return false end
 		local state = self:GetAttribute("state")
 		local buttonType, buttonAction = self:GetAttribute("type"), nil
 		-- action buttons can do their magic themself
