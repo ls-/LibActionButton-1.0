@@ -78,7 +78,7 @@ local ButtonRegistry, ActiveButtons = {}, {}
 
 local Update, UpdateButtonState, UpdateUsable, UpdateCount, UpdateCooldown, UpdateTooltip
 local StartFlash, StopFlash, UpdateFlash, UpdateHotkeys, UpdateRangeTimer, UpdateOverlayGlow
-local UpdateFlyout, ShowGrid, HideGrid
+local UpdateFlyout, ShowGrid, HideGrid, UpdateGrid
 
 -- HACK
 local UpdateSpellbookLookupTable
@@ -88,6 +88,7 @@ local InitializeEventHandler, OnEvent, ForAllButtons, OnUpdate
 local DefaultConfig = {
 	outOfRangeColoring = "button",
 	tooltip = "enabled",
+	showGrid = false,
 	colors = {
 		range = { 0.8, 0.1, 0.1 },
 		mana = { 0.5, 0.5, 1.0 }
@@ -533,6 +534,7 @@ function Generic:UpdateConfig(config)
 		self.actionName:Show()
 	end
 	UpdateHotkeys(self)
+	UpdateGrid(self)
 end
 
 -----------------------------------------------------------
@@ -748,10 +750,18 @@ function HideGrid()
 	end
 	if gridCounter == 0 then
 		for button in next, ButtonRegistry do
-			if button:IsShown() and not button:HasAction() then
+			if button:IsShown() and not button:HasAction() and not button.config.showGrid then
 				button:SetAlpha(0.0)
 			end
 		end
+	end
+end
+
+function UpdateGrid(self)
+	if self.config.showGrid then
+		self:SetAlpha(1.0)
+	elseif gridCounter == 0 and self:IsShown() and not self:HasAction() then
+		self:SetAlpha(0.0)
 	end
 end
 
@@ -792,7 +802,7 @@ function Update(self)
 		UpdateFlash(self)
 	else
 		ActiveButtons[self] = nil
-		if gridCounter == 0 then
+		if gridCounter == 0 and not self.config.showGrid then
 			self:SetAlpha(0.0)
 		end
 		self.cooldown:Hide()
