@@ -492,7 +492,11 @@ end
 local function merge(target, source, default)
 	for k,v in pairs(default) do
 		if type(v) ~= "table" then
-			target[k] = source and source[k] or v
+			if source and source[k] ~= nil then
+				target[k] = source[k]
+			else
+				target[k] = v
+			end
 		else
 			if type(target[k]) ~= "table" then target[k] = {} else wipe(target[k]) end
 			merge(target[k], type(source) == "table" and source[k], v)
