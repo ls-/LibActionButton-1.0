@@ -744,9 +744,10 @@ end
 --- KeyBound integration
 
 function Generic:GetHotkey()
-	if not KeyBound then return end
 	local key = GetBindingKey("CLICK "..self:GetName()..":LeftButton")
-	return key and KeyBound:ToShortKey(key)
+	if key then
+		return KeyBound and KeyBound:ToShortKey(key) or key
+	end
 end
 
 -----------------------------------------------------------
@@ -912,14 +913,13 @@ function UpdateTooltip(self)
 end
 
 function UpdateHotkeys(self)
-	local key = GetBindingKey("CLICK " .. self:GetName() .. ":LeftButton")
-	local text = GetBindingText(key, "KEY_", 1)
-	if text == "" then
+	local key = self:GetHotkey()
+	if not key or key == "" then
 		self.hotkey:SetText(RANGE_INDICATOR)
 		self.hotkey:SetPoint("TOPLEFT", self, "TOPLEFT", 1, - 2)
 		self.hotkey:Hide()
 	else
-		self.hotkey:SetText(text)
+		self.hotkey:SetText(key)
 		self.hotkey:SetPoint("TOPLEFT", self, "TOPLEFT", - 2, - 2)
 		self.hotkey:Show()
 	end
