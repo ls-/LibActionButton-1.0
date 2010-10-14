@@ -292,6 +292,9 @@ function lib:CreateButton(id, name, header, config)
 	button:UpdateAction()
 	UpdateHotkeys(button)
 
+	-- somewhat of a hack for the Flyout buttons to not error.
+	button.action = 0
+
 	return button
 end
 
@@ -962,19 +965,18 @@ function UpdateOverlayGlow(self)
 end
 
 -- Hook UpdateFlyout so we can use the blizzy templates
-local old_ActionButton_UpdateFlyout = ActionButton_UpdateFlyout
-ActionButton_UpdateFlyout = function(self, ...)
+hooksecurefunc("ActionButton_UpdateFlyout", function(self, ...)
 	if ButtonRegistry[self] then
-		return UpdateFlyout(self)
-	else
-		return old_ActionButton_UpdateFlyout(self, ...)
+		UpdateFlyout(self)
 	end
-end
+end)
 
 function UpdateFlyout(self)
+	-- disabled FlyoutBorder/BorderShadow, those are not handled by LBF and look terrible
+	self.FlyoutBorder:Hide()
+	self.FlyoutBorderShadow:Hide()
 	if self._state_type == "action" then
 		-- based on ActionButton_UpdateFlyout in ActionButton.lua
-		-- disabled FlyoutBorder/BorderShadow, those are not handled by LBF and look terrible
 		local actionType = GetActionInfo(self._state_action)
 		if actionType == "flyout" then
 			-- Update border and determine arrow position
