@@ -716,7 +716,7 @@ function OnUpdate(_, elapsed)
 								hotkey:Hide()
 							end
 						end
-						if valid == 0 then
+						if inRange == 0 then
 							hotkey:SetVertexColor(unpack(button.config.colors.range))
 						else
 							hotkey:SetVertexColor(0.6, 0.6, 0.6)
