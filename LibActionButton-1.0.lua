@@ -29,7 +29,7 @@ SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 
 ]]
 local MAJOR_VERSION = "LibActionButton-1.0"
-local MINOR_VERSION = 5
+local MINOR_VERSION = 6
 
 if not LibStub then error(MAJOR_VERSION .. " requires LibStub.") end
 local lib = LibStub:NewLibrary(MAJOR_VERSION, MINOR_VERSION)
@@ -834,6 +834,9 @@ function Update(self)
 		self.icon:Show()
 		self.rangeTimer = - 1
 		self:SetNormalTexture("Interface\\Buttons\\UI-Quickslot2")
+		if not self.LBFSkinned then
+			self.normalTexture:SetTexCoord(0, 0, 0, 0)
+		end
 	else
 		self.icon:Hide()
 		self.cooldown:Hide()
@@ -843,6 +846,9 @@ function Update(self)
 			self.hotkey:Hide()
 		else
 			self.hotkey:SetVertexColor(0.6, 0.6, 0.6)
+		end
+		if not self.LBFSkinned then
+			self.normalTexture:SetTexCoord(-0.15, 1.15, -0.15, 1.17)
 		end
 	end
 
