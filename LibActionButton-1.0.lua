@@ -29,7 +29,7 @@ SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 
 ]]
 local MAJOR_VERSION = "LibActionButton-1.0"
-local MINOR_VERSION = 7
+local MINOR_VERSION = 8
 
 if not LibStub then error(MAJOR_VERSION .. " requires LibStub.") end
 local lib = LibStub:NewLibrary(MAJOR_VERSION, MINOR_VERSION)
@@ -1079,7 +1079,7 @@ Action.IsCurrentlyActive       = function(self) return IsCurrentAction(self._sta
 Action.IsAutoRepeat            = function(self) return IsAutoRepeatAction(self._state_action) end
 Action.IsUsable                = function(self) return IsUsableAction(self._state_action) end
 Action.IsConsumableOrStackable = function(self) return IsConsumableAction(self._state_action) or IsStackableAction(self._state_action) end
-Action.IsInRange               = function(self) return IsActionInRange(self._state_action) end
+Action.IsInRange               = function(self) return IsActionInRange(self._state_action, self:GetAttribute("unit")) end
 Action.SetTooltip              = function(self) return GameTooltip:SetAction(self._state_action) end
 Action.GetSpellId              = function(self) local actionType, id, subType = GetActionInfo(self._state_action) return actionType == "spell" and id or nil end
 
@@ -1096,7 +1096,7 @@ Spell.IsCurrentlyActive       = function(self) return IsCurrentSpell(self._state
 Spell.IsAutoRepeat            = function(self) return IsAutoRepeatSpell(FindSpellBookSlotBySpellID(self._state_action), "spell") end -- needs spell book id as of 4.0.1.13066
 Spell.IsUsable                = function(self) return IsUsableSpell(self._state_action) end
 Spell.IsConsumableOrStackable = function(self) return IsConsumableSpell(self._state_action) end
-Spell.IsInRange               = function(self) return IsSpellInRange(FindSpellBookSlotBySpellID(self._state_action), "spell", "target") end -- needs spell book id as of 4.0.1.13066
+Spell.IsInRange               = function(self) return IsSpellInRange(FindSpellBookSlotBySpellID(self._state_action), "spell", self:GetAttribute("unit")) end -- needs spell book id as of 4.0.1.13066
 Spell.SetTooltip              = function(self) return GameTooltip:SetSpellByID(self._state_action) end
 Spell.GetSpellId              = function(self) return self._state_action end
 
@@ -1117,7 +1117,7 @@ Item.IsCurrentlyActive       = function(self) return IsCurrentItem(self._state_a
 Item.IsAutoRepeat            = function(self) return nil end
 Item.IsUsable                = function(self) return IsUsableItem(self._state_action) end
 Item.IsConsumableOrStackable = function(self) return IsConsumableItem(self._state_action) end
-Item.IsInRange               = function(self) return IsItemInRange(self._state_action, "target") end
+Item.IsInRange               = function(self) return IsItemInRange(self._state_action, self:GetAttribute("unit")) end
 Item.SetTooltip              = function(self) return GameTooltip:SetHyperlink(self._state_action) end
 Item.GetSpellId              = function(self) return nil end
 
