@@ -29,7 +29,7 @@ SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 
 ]]
 local MAJOR_VERSION = "LibActionButton-1.0"
-local MINOR_VERSION = 6
+local MINOR_VERSION = 7
 
 if not LibStub then error(MAJOR_VERSION .. " requires LibStub.") end
 local lib = LibStub:NewLibrary(MAJOR_VERSION, MINOR_VERSION)
@@ -207,6 +207,8 @@ function lib:CreateButton(id, name, header, config)
 	-- Wrapped OnDragStart(self, button, kind, value, ...)
 	header:WrapScript(button, "OnDragStart", [[
 		return self:RunAttribute("OnDragStart")
+	]], [[
+		self:RunAttribute("UpdateState", state)
 	]])
 
 	button:SetAttribute("OnReceiveDrag", [[
@@ -260,6 +262,8 @@ function lib:CreateButton(id, name, header, config)
 	-- Wrapped OnReceiveDrag(self, button, kind, value, ...)
 	header:WrapScript(button, "OnReceiveDrag", [[
 		return self:RunAttribute("OnReceiveDrag", kind, value, ...)
+	]], [[
+		self:RunAttribute("UpdateState", state)
 	]])
 
 	-- Store all sub frames on the button object for easier access
@@ -489,7 +493,8 @@ function Generic:PostClick()
 		self.header:Execute(format([[
 			local frame = self:GetFrameRef("updateButton")
 			control:RunFor(frame, frame:GetAttribute("OnReceiveDrag"), %s, %s, %s)
-		]], formatHelper(a), formatHelper(b), formatHelper(c)))
+			control:RunFor(frame, frame:GetAttribute("UpdateState"), %s)
+		]], formatHelper(a), formatHelper(b), formatHelper(c), formatHelper(self:GetAttribute("state"))))
 		PickupAny("clear", oldType, oldAction)
 	end
 	self._receiving_drag = nil
@@ -862,6 +867,18 @@ function Update(self)
 
 	if GameTooltip:GetOwner() == self then
 		UpdateTooltip(self)
+	end
+
+	-- this could've been a spec change, need to call OnStateChanged for action buttons, if present
+	if not InCombatLockdown() and self._state_type == "action" then
+		local onStateChanged = self:GetAttribute("OnStateChanged")
+		if onStateChanged then
+			self.header:SetFrameRef("updateButton", self)
+			self.header:Execute(([[
+				local frame = self:GetFrameRef("updateButton")
+				control:RunFor(frame, frame:GetAttribute("OnStateChanged"), %s, %s, %s)
+			]]):format(formatHelper(self:GetAttribute("state")), formatHelper(self._state_type), formatHelper(self._state_action)))
+		end
 	end
 end
 
