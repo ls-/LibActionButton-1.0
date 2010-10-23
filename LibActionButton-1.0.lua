@@ -29,23 +29,20 @@ SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 
 ]]
 local MAJOR_VERSION = "LibActionButton-1.0"
-local MINOR_VERSION = 8
+local MINOR_VERSION = 10
 
 if not LibStub then error(MAJOR_VERSION .. " requires LibStub.") end
-local lib = LibStub:NewLibrary(MAJOR_VERSION, MINOR_VERSION)
+local lib, oldversion = LibStub:NewLibrary(MAJOR_VERSION, MINOR_VERSION)
 if not lib then return end
 
 local KeyBound = LibStub("LibKeyBound-1.0", true)
-
--- This library does on purpose not even try to migrate previous buttons to the new lib,
--- as their layout might change, and we have no idea in what state they would be.
--- Instead, assume that all addons are actually loaded before they start creating buttons
--- (short of some LoD exceptions)
---
--- Anyway, if no buttons exist, this whole thing will be GC'ed away.
--- If buttons exist, it'll still be used for those, just to avoid troubles with library upgrading.
-
 local CBH = LibStub("CallbackHandler-1.0")
+
+lib.eventFrame = lib.eventFrame or CreateFrame("Frame")
+lib.eventFrame:UnregisterAllEvents()
+
+lib.buttonRegistry = lib.buttonRegistry or {}
+lib.activeButtons = lib.activeButtons or {}
 
 local Generic = CreateFrame("CheckButton")
 local Generic_MT = {__index = Generic}
@@ -74,11 +71,11 @@ local type_meta_map = {
 	macro  = Macro_MT
 }
 
-local ButtonRegistry, ActiveButtons = {}, {}
+local ButtonRegistry, ActiveButtons = lib.buttonRegistry, lib.activeButtons
 
 local Update, UpdateButtonState, UpdateUsable, UpdateCount, UpdateCooldown, UpdateTooltip
 local StartFlash, StopFlash, UpdateFlash, UpdateHotkeys, UpdateRangeTimer, UpdateOverlayGlow
-local UpdateFlyout, ShowGrid, HideGrid, UpdateGrid
+local UpdateFlyout, ShowGrid, HideGrid, UpdateGrid, SetupSecureSnippets
 
 -- HACK
 local UpdateSpellbookLookupTable
@@ -137,6 +134,45 @@ function lib:CreateButton(id, name, header, config)
 	-- just in case we're not run by a header, default to state 0
 	button:SetAttribute("state", 0)
 
+	SetupSecureSnippets(button)
+
+	-- Store all sub frames on the button object for easier access
+	button.icon               = _G[name .. "Icon"]
+	button.flash              = _G[name .. "Flash"]
+	button.FlyoutBorder       = _G[name .. "FlyoutBorder"]
+	button.FlyoutBorderShadow = _G[name .. "FlyoutBorderShadow"]
+	button.FlyoutArrow        = _G[name .. "FlyoutArrow"]
+	button.hotkey             = _G[name .. "HotKey"]
+	button.count              = _G[name .. "Count"]
+	button.actionName         = _G[name .. "Name"]
+	button.border             = _G[name .. "Border"]
+	button.cooldown           = _G[name .. "Cooldown"]
+	button.normalTexture      = _G[name .. "NormalTexture"]
+
+	-- Store the button in the registry, needed for event and OnUpdate handling
+	if not next(ButtonRegistry) then
+		InitializeEventHandler()
+	end
+	ButtonRegistry[button] = true
+
+	-- HACK: Create spellbook -> spell id lookup table
+	-- Hopefully Blizzard can fix this with 4.1
+	-- Bug Iriel/alestane to get it done!
+	UpdateSpellbookLookupTable(button)
+
+	button:UpdateConfig(config)
+
+	-- run an initial update
+	button:UpdateAction()
+	UpdateHotkeys(button)
+
+	-- somewhat of a hack for the Flyout buttons to not error.
+	button.action = 0
+
+	return button
+end
+
+function SetupSecureSnippets(button)
 	-- secure UpdateState(self, state)
 	-- update the type and action of the button based on the state
 	button:SetAttribute("UpdateState", [[
@@ -204,13 +240,6 @@ function lib:CreateButton(id, name, header, config)
 		return self:RunAttribute("PickupButton", type, action)
 	]])
 
-	-- Wrapped OnDragStart(self, button, kind, value, ...)
-	header:WrapScript(button, "OnDragStart", [[
-		return self:RunAttribute("OnDragStart")
-	]], [[
-		self:RunAttribute("UpdateState", state)
-	]])
-
 	button:SetAttribute("OnReceiveDrag", [[
 		if self:GetAttribute("LABdisableDragNDrop") then return false end
 		local kind, value, subtype = ...
@@ -259,47 +288,21 @@ function lib:CreateButton(id, name, header, config)
 		return self:RunAttribute("PickupButton", buttonType, buttonAction)
 	]])
 
-	-- Wrapped OnReceiveDrag(self, button, kind, value, ...)
-	header:WrapScript(button, "OnReceiveDrag", [[
-		return self:RunAttribute("OnReceiveDrag", kind, value, ...)
+	button:SetScript("OnDragStart", nil)
+	-- Wrapped OnDragStart(self, button, kind, value, ...)
+	button.header:WrapScript(button, "OnDragStart", [[
+		return self:RunAttribute("OnDragStart")
 	]], [[
 		self:RunAttribute("UpdateState", state)
 	]])
 
-	-- Store all sub frames on the button object for easier access
-	button.icon               = _G[name .. "Icon"]
-	button.flash              = _G[name .. "Flash"]
-	button.FlyoutBorder       = _G[name .. "FlyoutBorder"]
-	button.FlyoutBorderShadow = _G[name .. "FlyoutBorderShadow"]
-	button.FlyoutArrow        = _G[name .. "FlyoutArrow"]
-	button.hotkey             = _G[name .. "HotKey"]
-	button.count              = _G[name .. "Count"]
-	button.actionName         = _G[name .. "Name"]
-	button.border             = _G[name .. "Border"]
-	button.cooldown           = _G[name .. "Cooldown"]
-	button.normalTexture      = _G[name .. "NormalTexture"]
-
-	-- Store the button in the registry, needed for event and OnUpdate handling
-	if not next(ButtonRegistry) then
-		InitializeEventHandler()
-	end
-	ButtonRegistry[button] = true
-
-	-- HACK: Create spellbook -> spell id lookup table
-	-- Hopefully Blizzard can fix this with 4.1
-	-- Bug Iriel/alestane to get it done!
-	UpdateSpellbookLookupTable(button)
-
-	button:UpdateConfig(config)
-
-	-- run an initial update
-	button:UpdateAction()
-	UpdateHotkeys(button)
-
-	-- somewhat of a hack for the Flyout buttons to not error.
-	button.action = 0
-
-	return button
+	button:SetScript("OnReceiveDrag", nil)
+	-- Wrapped OnReceiveDrag(self, button, kind, value, ...)
+	button.header:WrapScript(button, "OnReceiveDrag", [[
+		return self:RunAttribute("OnReceiveDrag", kind, value, ...)
+	]], [[
+		self:RunAttribute("UpdateState", state)
+	]])
 end
 
 -----------------------------------------------------------
@@ -557,44 +560,43 @@ function ForAllButtons(method, onlyWithAction, ...)
 end
 
 function InitializeEventHandler()
-	-- I'm abusing the "Generic" base frame as event handler
-	Generic:SetScript("OnEvent", OnEvent)
-	Generic:RegisterEvent("PLAYER_ENTERING_WORLD")
-	Generic:RegisterEvent("ACTIONBAR_SHOWGRID")
-	Generic:RegisterEvent("ACTIONBAR_HIDEGRID")
-	Generic:RegisterEvent("ACTIONBAR_PAGE_CHANGED")
-	Generic:RegisterEvent("ACTIONBAR_SLOT_CHANGED")
-	Generic:RegisterEvent("UPDATE_BINDINGS")
-	Generic:RegisterEvent("UPDATE_SHAPESHIFT_FORM")
+	lib.eventFrame:SetScript("OnEvent", OnEvent)
+	lib.eventFrame:RegisterEvent("PLAYER_ENTERING_WORLD")
+	lib.eventFrame:RegisterEvent("ACTIONBAR_SHOWGRID")
+	lib.eventFrame:RegisterEvent("ACTIONBAR_HIDEGRID")
+	lib.eventFrame:RegisterEvent("ACTIONBAR_PAGE_CHANGED")
+	lib.eventFrame:RegisterEvent("ACTIONBAR_SLOT_CHANGED")
+	lib.eventFrame:RegisterEvent("UPDATE_BINDINGS")
+	lib.eventFrame:RegisterEvent("UPDATE_SHAPESHIFT_FORM")
 
-	Generic:RegisterEvent("ACTIONBAR_UPDATE_STATE")
-	Generic:RegisterEvent("ACTIONBAR_UPDATE_USABLE")
-	Generic:RegisterEvent("ACTIONBAR_UPDATE_COOLDOWN")
-	Generic:RegisterEvent("PLAYER_TARGET_CHANGED")
-	Generic:RegisterEvent("TRADE_SKILL_SHOW")
-	Generic:RegisterEvent("TRADE_SKILL_CLOSE")
-	Generic:RegisterEvent("ARCHAEOLOGY_CLOSED")
-	Generic:RegisterEvent("PLAYER_ENTER_COMBAT")
-	Generic:RegisterEvent("PLAYER_LEAVE_COMBAT")
-	Generic:RegisterEvent("START_AUTOREPEAT_SPELL")
-	Generic:RegisterEvent("STOP_AUTOREPEAT_SPELL")
-	Generic:RegisterEvent("UNIT_ENTERED_VEHICLE")
-	Generic:RegisterEvent("UNIT_EXITED_VEHICLE")
-	Generic:RegisterEvent("COMPANION_UPDATE")
-	Generic:RegisterEvent("UNIT_INVENTORY_CHANGED")
-	Generic:RegisterEvent("LEARNED_SPELL_IN_TAB")
-	Generic:RegisterEvent("PET_STABLE_UPDATE")
-	Generic:RegisterEvent("PET_STABLE_SHOW")
-	Generic:RegisterEvent("SPELL_ACTIVATION_OVERLAY_GLOW_SHOW")
-	Generic:RegisterEvent("SPELL_ACTIVATION_OVERLAY_GLOW_HIDE")
+	lib.eventFrame:RegisterEvent("ACTIONBAR_UPDATE_STATE")
+	lib.eventFrame:RegisterEvent("ACTIONBAR_UPDATE_USABLE")
+	lib.eventFrame:RegisterEvent("ACTIONBAR_UPDATE_COOLDOWN")
+	lib.eventFrame:RegisterEvent("PLAYER_TARGET_CHANGED")
+	lib.eventFrame:RegisterEvent("TRADE_SKILL_SHOW")
+	lib.eventFrame:RegisterEvent("TRADE_SKILL_CLOSE")
+	lib.eventFrame:RegisterEvent("ARCHAEOLOGY_CLOSED")
+	lib.eventFrame:RegisterEvent("PLAYER_ENTER_COMBAT")
+	lib.eventFrame:RegisterEvent("PLAYER_LEAVE_COMBAT")
+	lib.eventFrame:RegisterEvent("START_AUTOREPEAT_SPELL")
+	lib.eventFrame:RegisterEvent("STOP_AUTOREPEAT_SPELL")
+	lib.eventFrame:RegisterEvent("UNIT_ENTERED_VEHICLE")
+	lib.eventFrame:RegisterEvent("UNIT_EXITED_VEHICLE")
+	lib.eventFrame:RegisterEvent("COMPANION_UPDATE")
+	lib.eventFrame:RegisterEvent("UNIT_INVENTORY_CHANGED")
+	lib.eventFrame:RegisterEvent("LEARNED_SPELL_IN_TAB")
+	lib.eventFrame:RegisterEvent("PET_STABLE_UPDATE")
+	lib.eventFrame:RegisterEvent("PET_STABLE_SHOW")
+	lib.eventFrame:RegisterEvent("SPELL_ACTIVATION_OVERLAY_GLOW_SHOW")
+	lib.eventFrame:RegisterEvent("SPELL_ACTIVATION_OVERLAY_GLOW_HIDE")
 
 	-- With those two, do we still need the ACTIONBAR equivalents of them?
-	Generic:RegisterEvent("SPELL_UPDATE_COOLDOWN")
-	Generic:RegisterEvent("SPELL_UPDATE_USABLE")
-	Generic:RegisterEvent("PLAYER_EQUIPMENT_CHANGED")
+	lib.eventFrame:RegisterEvent("SPELL_UPDATE_COOLDOWN")
+	lib.eventFrame:RegisterEvent("SPELL_UPDATE_USABLE")
+	lib.eventFrame:RegisterEvent("PLAYER_EQUIPMENT_CHANGED")
 
-	Generic:Show()
-	Generic:SetScript("OnUpdate", OnUpdate)
+	lib.eventFrame:Show()
+	lib.eventFrame:SetScript("OnUpdate", OnUpdate)
 end
 
 function OnEvent(frame, event, arg1, ...)
@@ -791,7 +793,7 @@ function Generic:UpdateAction(force)
 	local type, action = self:GetAction()
 	if force or type ~= self._state_type or action ~= self._state_action then
 		-- type changed, update the metatable
-		if self._state_type ~= type then
+		if force or self._state_type ~= type then
 			local meta = type_meta_map[type] or type_meta_map.empty
 			setmetatable(self, meta)
 			self._state_type = type
@@ -1138,3 +1140,14 @@ Macro.IsConsumableOrStackable = function(self) return nil end
 Macro.IsInRange               = function(self) return nil end
 Macro.SetTooltip              = function(self) return nil end
 Macro.GetSpellId              = function(self) return nil end
+
+-----------------------------------------------------------
+--- Update old Buttons
+if next(lib.buttonRegistry) then
+	InitializeEventHandler()
+	for button in next, lib.buttonRegistry do
+		-- this refreshes the metatable on the button
+		Generic.UpdateAction(button, true)
+		button:SetupSecureSnippets()
+	end
+end
