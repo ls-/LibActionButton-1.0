@@ -308,6 +308,14 @@ end
 -----------------------------------------------------------
 --- utility
 
+function lib:GetAllButtons()
+	local buttons = {}
+	for button in next, ButtonRegistry do
+		buttons[button] = true
+	end
+	return buttons
+end
+
 function Generic:ClearSetPoint(...)
 	self:ClearAllPoints()
 	self:SetPoint(...)
