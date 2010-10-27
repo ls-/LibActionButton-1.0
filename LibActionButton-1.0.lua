@@ -29,7 +29,7 @@ SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 
 ]]
 local MAJOR_VERSION = "LibActionButton-1.0"
-local MINOR_VERSION = 10
+local MINOR_VERSION = 11
 
 if not LibStub then error(MAJOR_VERSION .. " requires LibStub.") end
 local lib, oldversion = LibStub:NewLibrary(MAJOR_VERSION, MINOR_VERSION)
@@ -43,6 +43,8 @@ lib.eventFrame:UnregisterAllEvents()
 
 lib.buttonRegistry = lib.buttonRegistry or {}
 lib.activeButtons = lib.activeButtons or {}
+
+lib.callbacks = lib.callbacks or CBH:New(lib)
 
 local Generic = CreateFrame("CheckButton")
 local Generic_MT = {__index = Generic}
@@ -168,6 +170,8 @@ function lib:CreateButton(id, name, header, config)
 
 	-- somewhat of a hack for the Flyout buttons to not error.
 	button.action = 0
+
+	lib.callbacks:Fire("OnButtonCreated", button)
 
 	return button
 end
@@ -397,10 +401,9 @@ end
 
 function Generic:ButtonContentsChanged(state, kind, value)
 	state = tostring(state)
-	print("button contents changed", state, kind, value)
 	self.state_types[state] = kind or "emtpy"
 	self.state_actions[state] = value
-	-- TODO: Notify addon about this
+	lib.callbacks:Fire("OnButtonContentsChanged", self, state, self.state_types[state], self.state_actions[state])
 	self:UpdateAction(self)
 end
 
@@ -890,6 +893,7 @@ function Update(self)
 			]]):format(formatHelper(self:GetAttribute("state")), formatHelper(self._state_type), formatHelper(self._state_action)))
 		end
 	end
+	lib.callbacks:Fire("OnButtonUpdate", self)
 end
 
 function Generic:UpdateLocal()
@@ -902,6 +906,7 @@ function UpdateButtonState(self)
 	else
 		self:SetChecked(0)
 	end
+	lib.callbacks:Fire("OnButtonState", self)
 end
 
 function UpdateUsable(self)
@@ -922,6 +927,7 @@ function UpdateUsable(self)
 			--self.normalTexture:SetVertexColor(1.0, 1.0, 1.0)
 		end
 	end
+	lib.callbacks:Fire("OnButtonUsable", self)
 end
 
 function UpdateCount(self)
