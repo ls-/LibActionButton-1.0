@@ -296,16 +296,26 @@ function SetupSecureSnippets(button)
 	-- Wrapped OnDragStart(self, button, kind, value, ...)
 	button.header:WrapScript(button, "OnDragStart", [[
 		return self:RunAttribute("OnDragStart")
+	]])
+	-- Wrap twice, because the post-script is not run when the pre-script causes a pickup (doh)
+	-- we also need some phony message, or it won't work =/
+	button.header:WrapScript(button, "OnDragStart", [[
+		return "message", "update"
 	]], [[
-		self:RunAttribute("UpdateState", state)
+		self:RunAttribute("UpdateState", self:GetAttribute("state"))
 	]])
 
 	button:SetScript("OnReceiveDrag", nil)
 	-- Wrapped OnReceiveDrag(self, button, kind, value, ...)
 	button.header:WrapScript(button, "OnReceiveDrag", [[
 		return self:RunAttribute("OnReceiveDrag", kind, value, ...)
+	]])
+	-- Wrap twice, because the post-script is not run when the pre-script causes a pickup (doh)
+	-- we also need some phony message, or it won't work =/
+	button.header:WrapScript(button, "OnReceiveDrag", [[
+		return "message", "update"
 	]], [[
-		self:RunAttribute("UpdateState", state)
+		self:RunAttribute("UpdateState", self:GetAttribute("state"))
 	]])
 end
 
