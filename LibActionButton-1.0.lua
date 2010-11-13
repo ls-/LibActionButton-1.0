@@ -29,7 +29,7 @@ SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 
 ]]
 local MAJOR_VERSION = "LibActionButton-1.0"
-local MINOR_VERSION = 11
+local MINOR_VERSION = 12
 
 if not LibStub then error(MAJOR_VERSION .. " requires LibStub.") end
 local lib, oldversion = LibStub:NewLibrary(MAJOR_VERSION, MINOR_VERSION)
@@ -77,7 +77,7 @@ local ButtonRegistry, ActiveButtons = lib.buttonRegistry, lib.activeButtons
 
 local Update, UpdateButtonState, UpdateUsable, UpdateCount, UpdateCooldown, UpdateTooltip
 local StartFlash, StopFlash, UpdateFlash, UpdateHotkeys, UpdateRangeTimer, UpdateOverlayGlow
-local UpdateFlyout, ShowGrid, HideGrid, UpdateGrid, SetupSecureSnippets
+local UpdateFlyout, ShowGrid, HideGrid, UpdateGrid, SetupSecureSnippets, WrapOnClick
 
 -- HACK
 local UpdateSpellbookLookupTable
@@ -137,6 +137,7 @@ function lib:CreateButton(id, name, header, config)
 	button:SetAttribute("state", 0)
 
 	SetupSecureSnippets(button)
+	WrapOnClick(button)
 
 	-- Store all sub frames on the button object for easier access
 	button.icon               = _G[name .. "Icon"]
@@ -316,6 +317,21 @@ function SetupSecureSnippets(button)
 		return "message", "update"
 	]], [[
 		self:RunAttribute("UpdateState", self:GetAttribute("state"))
+	]])
+end
+
+function WrapOnClick(button)
+	-- Wrap OnClick, to catch changes to actions that are applied with a click on the button.
+	button.header:WrapScript(button, "OnClick", [[
+		if self:GetAttribute("type") == "action" then
+			local type, action = GetActionInfo(self:GetAttribute("action"))
+			return nil, format("%s|%s", tostring(type), tostring(action))
+		end
+	]], [[
+		local type, action = GetActionInfo(self:GetAttribute("action"))
+		if message ~= format("%s|%s", tostring(type), tostring(action)) then
+			self:RunAttribute("UpdateState", self:GetAttribute("state"))
+		end
 	]])
 end
 
@@ -1167,11 +1183,14 @@ Macro.GetSpellId              = function(self) return nil end
 
 -----------------------------------------------------------
 --- Update old Buttons
-if next(lib.buttonRegistry) then
+if oldversion and next(lib.buttonRegistry) then
 	InitializeEventHandler()
 	for button in next, lib.buttonRegistry do
 		-- this refreshes the metatable on the button
 		Generic.UpdateAction(button, true)
-		button:SetupSecureSnippets()
+		SetupSecureSnippets(button)
+		if oldversion < 12 then
+			WrapOnClick(button)
+		end
 	end
 end
