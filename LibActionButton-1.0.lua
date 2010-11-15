@@ -29,7 +29,7 @@ SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 
 ]]
 local MAJOR_VERSION = "LibActionButton-1.0"
-local MINOR_VERSION = 12
+local MINOR_VERSION = 13
 
 if not LibStub then error(MAJOR_VERSION .. " requires LibStub.") end
 local lib, oldversion = LibStub:NewLibrary(MAJOR_VERSION, MINOR_VERSION)
@@ -96,7 +96,8 @@ local DefaultConfig = {
 		macro = false,
 		hotkey = false,
 		equipped = false,
-	}
+	},
+	keyBoundTarget = false,
 }
 
 --- Create a new action button.
@@ -819,10 +820,59 @@ end
 --- KeyBound integration
 
 function Generic:GetHotkey()
-	local key = GetBindingKey("CLICK "..self:GetName()..":LeftButton")
+	local name = "CLICK "..self:GetName()..":LeftButton"
+	local key = GetBindingKey(self.config.keyBoundTarget or name)
+	if not key and self.config.keyBoundTarget then
+		key = GetBindingKey(name)
+	end
 	if key then
 		return KeyBound and KeyBound:ToShortKey(key) or key
 	end
+end
+
+local function getKeys(binding, keys)
+	keys = keys or ""
+	for i = 1, select("#", GetBindingKey(binding)) do
+		local hotKey = select(i, GetBindingKey(binding))
+		if keys ~= "" then
+			keys = keys .. ", "
+		end
+		keys = keys .. GetBindingText(hotKey, "KEY_")
+	end
+	return keys
+end
+
+function Generic:GetBindings()
+	local keys, binding
+
+	if self.config.keyBoundTarget then
+		keys = getKeys(self.config.keyBoundTarget)
+	end
+
+	keys = getKeys("CLICK "..self:GetName()..":LeftButton")
+
+	return keys
+end
+
+function Generic:SetKey(key)
+	if self.config.keyBoundTarget then
+		SetBinding(key, self.config.keyBoundTarget)
+	else
+		SetBindingClick(key, self:GetName(), "LeftButton")
+	end
+end
+
+local function clearBindings(binding)
+	while GetBindingKey(binding) do
+		SetBinding(GetBindingKey(binding), nil)
+	end
+end
+
+function Generic:ClearBindings()
+	if self.config.keyBoundTarget then
+		clearBindings(self.config.keyBoundTarget)
+	end
+	clearBindings("CLICK "..self:GetName()..":LeftButton")
 end
 
 -----------------------------------------------------------
