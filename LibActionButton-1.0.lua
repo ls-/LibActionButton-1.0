@@ -95,6 +95,7 @@ local DefaultConfig = {
 	hideElements = {
 		macro = false,
 		hotkey = false,
+		equipped = false,
 	}
 }
 
@@ -584,6 +585,7 @@ function Generic:UpdateConfig(config)
 	end
 	UpdateHotkeys(self)
 	UpdateGrid(self)
+	Update(self)
 end
 
 -----------------------------------------------------------
@@ -857,7 +859,7 @@ function Update(self)
 	end
 
 	-- Add a green border if button is an equipped item
-	if self:IsEquipped() then
+	if self:IsEquipped() and not self.config.hideElements.equipped then
 		self.border:SetVertexColor(0, 1.0, 0, 0.35)
 		self.border:Show()
 	else
