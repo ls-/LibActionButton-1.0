@@ -29,7 +29,7 @@ SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 
 ]]
 local MAJOR_VERSION = "LibActionButton-1.0"
-local MINOR_VERSION = 13
+local MINOR_VERSION = 14
 
 if not LibStub then error(MAJOR_VERSION .. " requires LibStub.") end
 local lib, oldversion = LibStub:NewLibrary(MAJOR_VERSION, MINOR_VERSION)
@@ -64,13 +64,17 @@ local Item_MT = {__index = Item}
 local Macro = setmetatable({}, {__index = Generic})
 local Macro_MT = {__index = Macro}
 
+local Custom = setmetatable({}, {__index = Generic})
+local Custom_MT = {__index = Custom}
+
 local type_meta_map = {
 	empty  = Generic_MT,
 	action = Action_MT,
 	--pet    = PetAction_MT,
 	spell  = Spell_MT,
 	item   = Item_MT,
-	macro  = Macro_MT
+	macro  = Macro_MT,
+	custom = Custom_MT
 }
 
 local ButtonRegistry, ActiveButtons = lib.buttonRegistry, lib.activeButtons
@@ -180,6 +184,7 @@ function lib:CreateButton(id, name, header, config)
 end
 
 function SetupSecureSnippets(button)
+	button:SetAttribute("_custom", Custom.RunCustom)
 	-- secure UpdateState(self, state)
 	-- update the type and action of the button based on the state
 	button:SetAttribute("UpdateState", [[
@@ -188,7 +193,7 @@ function SetupSecureSnippets(button)
 		local type, action = (self:GetAttribute(format("labtype-%s", state)) or "empty"), self:GetAttribute(format("labaction-%s", state))
 
 		self:SetAttribute("type", type)
-		if type ~= "empty" then
+		if type ~= "empty" and type ~= "custom" then
 			local action_field = (type == "pet") and "action" or type
 			self:SetAttribute(action_field, action)
 			self:SetAttribute("action_field", action_field)
@@ -227,7 +232,7 @@ function SetupSecureSnippets(button)
 		local state = self:GetAttribute("state")
 		local type = self:GetAttribute("type")
 		-- if the button is empty, we can't drag anything off it
-		if type == "empty" then
+		if type == "empty" or type == "custom" then
 			return false
 		end
 		-- Get the value for the action attribute
@@ -253,6 +258,7 @@ function SetupSecureSnippets(button)
 		if not kind or not value then return false end
 		local state = self:GetAttribute("state")
 		local buttonType, buttonAction = self:GetAttribute("type"), nil
+		if buttonType == "custom" then return false end
 		-- action buttons can do their magic themself
 		-- for all other buttons, we'll need to update the content now
 		if buttonType ~= "action" and buttonType ~= "pet" then
@@ -377,7 +383,7 @@ function Generic:SetState(state, kind, action)
 	if kind ~= "empty" and action == nil then
 		error("SetStateAction: an action is required for non-empty states", 2)
 	end
-	if action ~= nil and type(action) ~= "number" and type(action) ~= "string" then
+	if kind ~= "custom" and action ~= nil and type(action) ~= "number" and type(action) ~= "string" or (kind == "custom" and type(action) ~= "table") then
 		error("SetStateAction: invalid action data type, only strings and numbers allowed", 2)
 	end
 
@@ -1232,6 +1238,24 @@ Macro.IsConsumableOrStackable = function(self) return nil end
 Macro.IsInRange               = function(self) return nil end
 Macro.SetTooltip              = function(self) return nil end
 Macro.GetSpellId              = function(self) return nil end
+
+-----------------------------------------------------------
+--- Custom Button
+Custom.HasAction               = function(self) return true end
+Custom.GetActionText           = function(self) return "" end
+Custom.GetTexture              = function(self) return self._state_action.texture end
+Custom.GetCount                = function(self) return 0 end
+Custom.GetCooldown             = function(self) return nil end
+Custom.IsAttack                = function(self) return nil end
+Custom.IsEquipped              = function(self) return nil end
+Custom.IsCurrentlyActive       = function(self) return nil end
+Custom.IsAutoRepeat            = function(self) return nil end
+Custom.IsUsable                = function(self) return true end
+Custom.IsConsumableOrStackable = function(self) return nil end
+Custom.IsInRange               = function(self) return nil end
+Custom.SetTooltip              = function(self) return GameTooltip:SetText(self._state_action.tooltip) end
+Custom.GetSpellId              = function(self) return nil end
+Custom.RunCustom               = function(self, unit, button) return self._state_action.func(self, unit, button) end
 
 -----------------------------------------------------------
 --- Update old Buttons
