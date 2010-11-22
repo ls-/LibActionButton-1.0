@@ -379,7 +379,7 @@ function Generic:SetState(state, kind, action)
 	-- we allow a nil kind for setting a empty state
 	if not kind then kind = "empty" end
 	if not type_meta_map[kind] then
-		error("SetStateAction: unknown action type: %s" .. tostring(kind), 2)
+		error("SetStateAction: unknown action type: " .. tostring(kind), 2)
 	end
 	if kind ~= "empty" and action == nil then
 		error("SetStateAction: an action is required for non-empty states", 2)
