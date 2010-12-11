@@ -29,7 +29,7 @@ SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 
 ]]
 local MAJOR_VERSION = "LibActionButton-1.0"
-local MINOR_VERSION = 15
+local MINOR_VERSION = 16
 
 if not LibStub then error(MAJOR_VERSION .. " requires LibStub.") end
 local lib, oldversion = LibStub:NewLibrary(MAJOR_VERSION, MINOR_VERSION)
@@ -1150,6 +1150,15 @@ function UpdateSpellbookLookupTable(self)
 	self:SetAttribute("LookupTable", nil)
 end
 
+local function GetSpellIdByName(spellName)
+	if not spellName then return end
+	local spellLink = GetSpellLink(spellName)
+	if spellLink then
+		return tonumber(spellLink:match("spell:(%d+)"))
+	end
+	return nil
+end
+
 -----------------------------------------------------------
 --- WoW API mapping
 --- Generic Button
@@ -1183,7 +1192,14 @@ Action.IsUsable                = function(self) return IsUsableAction(self._stat
 Action.IsConsumableOrStackable = function(self) return IsConsumableAction(self._state_action) or IsStackableAction(self._state_action) end
 Action.IsInRange               = function(self) return IsActionInRange(self._state_action, self:GetAttribute("unit")) end
 Action.SetTooltip              = function(self) return GameTooltip:SetAction(self._state_action) end
-Action.GetSpellId              = function(self) local actionType, id, subType = GetActionInfo(self._state_action) return actionType == "spell" and id or nil end
+Action.GetSpellId              = function(self)
+	local actionType, id, subType = GetActionInfo(self._state_action)
+	if actionType == "spell" then
+		return id
+	elseif actionType == "macro" then
+		return GetSpellIdByName(GetMacroSpell(id))
+	end
+end
 
 -----------------------------------------------------------
 --- Spell Button
