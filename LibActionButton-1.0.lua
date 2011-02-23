@@ -29,7 +29,7 @@ SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 
 ]]
 local MAJOR_VERSION = "LibActionButton-1.0"
-local MINOR_VERSION = 18
+local MINOR_VERSION = 19
 
 if not LibStub then error(MAJOR_VERSION .. " requires LibStub.") end
 local lib, oldversion = LibStub:NewLibrary(MAJOR_VERSION, MINOR_VERSION)
@@ -651,7 +651,7 @@ function OnEvent(frame, event, arg1, ...)
 	-- HACK: the dreaded spellbook -> spellid lookup table
 	-- With 4.0 changes, and all spells being in spellbook already, do we need to update this?
 	-- Maybe spells change id, even if no new ones are added?
-	if event == "LEARNED_SPELL_IN_TAB" then
+	if event == "LEARNED_SPELL_IN_TAB" and not InCombatLockdown() then
 		ForAllButtons(UpdateSpellbookLookupTable)
 	end
 
