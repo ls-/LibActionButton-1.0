@@ -29,7 +29,7 @@ SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 
 ]]
 local MAJOR_VERSION = "LibActionButton-1.0"
-local MINOR_VERSION = 19
+local MINOR_VERSION = 20
 
 if not LibStub then error(MAJOR_VERSION .. " requires LibStub.") end
 local lib, oldversion = LibStub:NewLibrary(MAJOR_VERSION, MINOR_VERSION)
@@ -82,9 +82,6 @@ local ButtonRegistry, ActiveButtons = lib.buttonRegistry, lib.activeButtons
 local Update, UpdateButtonState, UpdateUsable, UpdateCount, UpdateCooldown, UpdateTooltip
 local StartFlash, StopFlash, UpdateFlash, UpdateHotkeys, UpdateRangeTimer, UpdateOverlayGlow
 local UpdateFlyout, ShowGrid, HideGrid, UpdateGrid, SetupSecureSnippets, WrapOnClick
-
--- HACK
-local UpdateSpellbookLookupTable
 
 local InitializeEventHandler, OnEvent, ForAllButtons, OnUpdate
 
@@ -164,11 +161,6 @@ function lib:CreateButton(id, name, header, config)
 		InitializeEventHandler()
 	end
 	ButtonRegistry[button] = true
-
-	-- HACK: Create spellbook -> spell id lookup table
-	-- Hopefully Blizzard can fix this with 4.1
-	-- Bug Iriel/alestane to get it done!
-	UpdateSpellbookLookupTable(button)
 
 	button:UpdateConfig(config)
 
@@ -255,7 +247,7 @@ function SetupSecureSnippets(button)
 
 	button:SetAttribute("OnReceiveDrag", [[
 		if self:GetAttribute("LABdisableDragNDrop") then return false end
-		local kind, value, subtype = ...
+		local kind, value, subtype, extra = ...
 		if not kind or not value then return false end
 		local state = self:GetAttribute("state")
 		local buttonType, buttonAction = self:GetAttribute("type"), nil
@@ -263,18 +255,12 @@ function SetupSecureSnippets(button)
 		-- action buttons can do their magic themself
 		-- for all other buttons, we'll need to update the content now
 		if buttonType ~= "action" and buttonType ~= "pet" then
-			-- We get spell book ids from CursorInfo
-			-- Convert them to actual spell ids
+			-- with "spell" types, the 4th value contains the actual spell id
 			if kind == "spell" then
-				-- HACK: Use a lookup table to get the spell id from a spellbook slot
-				-- API update won't make it into 4.0 =(
-				local sid = G_lookupTable[tonumber(value)]
-				if sid then
-					value = sid
+				if extra then
+					value = extra
 				else
-					-- no valid spell
-					print("invalid spell", kind, subtype)
-					return false
+					print("no spell id?", ...)
 				end
 			elseif kind == "item" and value then
 				value = format("item:%d", value)
@@ -648,13 +634,6 @@ function InitializeEventHandler()
 end
 
 function OnEvent(frame, event, arg1, ...)
-	-- HACK: the dreaded spellbook -> spellid lookup table
-	-- With 4.0 changes, and all spells being in spellbook already, do we need to update this?
-	-- Maybe spells change id, even if no new ones are added?
-	if event == "LEARNED_SPELL_IN_TAB" and not InCombatLockdown() then
-		ForAllButtons(UpdateSpellbookLookupTable)
-	end
-
 	if (event == "UNIT_INVENTORY_CHANGED" and arg1 == "player") or event == "LEARNED_SPELL_IN_TAB" then
 		local tooltipOwner = GameTooltip:GetOwner()
 		if ButtonRegistry[tooltipOwner] then
@@ -1127,27 +1106,6 @@ end
 
 function UpdateRangeTimer()
 	rangeTimer = -1
-end
-
--- HACK: Create a spellbook -> spellid lookup table
-function UpdateSpellbookLookupTable(self)
-	local code = [[
-		G_lookupTable = newtable()
-	]]
-	for i=1,MAX_SPELLS do
-		local spellType, spellId = GetSpellBookItemInfo(i, BOOKTYPE_SPELL)
-		if spellId then
-			code = code .. format("G_lookupTable[%d] = %d\n", i, spellId)
-		end
-		if not spellType then break end
-	end
-	self:SetAttribute("LookupTable", code)
-	self.header:SetFrameRef("updateButton", self)
-	self.header:Execute([[
-		local frame = self:GetFrameRef("updateButton")
-		control:RunFor(frame, frame:GetAttribute("LookupTable"))
-	]])
-	self:SetAttribute("LookupTable", nil)
 end
 
 local function GetSpellIdByName(spellName)
