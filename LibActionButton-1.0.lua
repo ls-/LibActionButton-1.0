@@ -1175,7 +1175,8 @@ Action.GetSpellId              = function(self)
 	if actionType == "spell" then
 		return id
 	elseif actionType == "macro" then
-		return GetSpellIdByName(GetMacroSpell(id))
+		local _, _, spellId = GetMacroSpell(id)
+		return spellId
 	end
 end
 
