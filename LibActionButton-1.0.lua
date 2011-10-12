@@ -1102,8 +1102,20 @@ function UpdateFlyout(self)
 			-- Update arrow
 			self.FlyoutArrow:Show()
 			self.FlyoutArrow:ClearAllPoints()
-			self.FlyoutArrow:SetPoint("TOP", self, "TOP", 0, arrowDistance)
-			SetClampedTextureRotation(self.FlyoutArrow, 0)
+			local direction = self:GetAttribute("flyoutDirection");
+			if direction == "LEFT" then
+				self.FlyoutArrow:SetPoint("LEFT", self, "LEFT", -arrowDistance, 0)
+				SetClampedTextureRotation(self.FlyoutArrow, 270)
+			elseif direction == "RIGHT" then
+				self.FlyoutArrow:SetPoint("RIGHT", self, "RIGHT", arrowDistance, 0)
+				SetClampedTextureRotation(self.FlyoutArrow, 90)
+			elseif direction == "DOWN" then
+				self.FlyoutArrow:SetPoint("BOTTOM", self, "BOTTOM", 0, -arrowDistance)
+				SetClampedTextureRotation(self.FlyoutArrow, 180)
+			else
+				self.FlyoutArrow:SetPoint("TOP", self, "TOP", 0, arrowDistance)
+				SetClampedTextureRotation(self.FlyoutArrow, 0)
+			end
 
 			-- return here, otherwise flyout is hidden
 			return
