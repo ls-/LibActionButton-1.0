@@ -447,6 +447,14 @@ function Generic:AddToButtonFacade(group)
 	self.LBFSkinned = true
 end
 
+function Generic:AddToMasque(group)
+	if type(group) ~= "table" or type(group.AddButton) ~= "function" then
+		error("LibActionButton-1.0:AddToMasque: You need to supply a proper group to use!", 2)
+	end
+	group:AddButton(self)
+	self.MasqueSkinned = true
+end
+
 -----------------------------------------------------------
 --- frame scripts
 
@@ -917,7 +925,7 @@ function Update(self)
 		self.icon:Show()
 		self.rangeTimer = - 1
 		self:SetNormalTexture("Interface\\Buttons\\UI-Quickslot2")
-		if not self.LBFSkinned then
+		if not self.LBFSkinned and not self.MasqueSkinned then
 			self.normalTexture:SetTexCoord(0, 0, 0, 0)
 		end
 	else
@@ -930,7 +938,7 @@ function Update(self)
 		else
 			self.hotkey:SetVertexColor(0.6, 0.6, 0.6)
 		end
-		if not self.LBFSkinned then
+		if not self.LBFSkinned and not self.MasqueSkinned then
 			self.normalTexture:SetTexCoord(-0.15, 1.15, -0.15, 1.17)
 		end
 	end
