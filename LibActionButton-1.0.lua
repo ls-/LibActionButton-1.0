@@ -35,6 +35,12 @@ if not LibStub then error(MAJOR_VERSION .. " requires LibStub.") end
 local lib, oldversion = LibStub:NewLibrary(MAJOR_VERSION, MINOR_VERSION)
 if not lib then return end
 
+-- Lua functions
+local _G = _G
+local type, error, tostring, tonumber, assert, select = type, error, tostring, tonumber, assert, select
+local setmetatable, wipe, unpack, pairs, next = setmetatable, wipe, unpack, pairs, next
+local str_match, format = string.match, format
+
 local KeyBound = LibStub("LibKeyBound-1.0", true)
 local CBH = LibStub("CallbackHandler-1.0")
 
@@ -378,7 +384,7 @@ function Generic:SetState(state, kind, action)
 		if tonumber(action) then
 			action = format("item:%s", action)
 		else
-			local itemString = string.match(action, "^|c%x+|H(item[%d:]+)|h%[")
+			local itemString = str_match(action, "^|c%x+|H(item[%d:]+)|h%[")
 			if itemString then
 				action = itemString
 			end
