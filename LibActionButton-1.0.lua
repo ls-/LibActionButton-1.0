@@ -29,7 +29,7 @@ SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 
 ]]
 local MAJOR_VERSION = "LibActionButton-1.0"
-local MINOR_VERSION = 21
+local MINOR_VERSION = 22
 
 if not LibStub then error(MAJOR_VERSION .. " requires LibStub.") end
 local lib, oldversion = LibStub:NewLibrary(MAJOR_VERSION, MINOR_VERSION)
@@ -637,6 +637,8 @@ function InitializeEventHandler()
 	lib.eventFrame:RegisterEvent("PET_STABLE_SHOW")
 	lib.eventFrame:RegisterEvent("SPELL_ACTIVATION_OVERLAY_GLOW_SHOW")
 	lib.eventFrame:RegisterEvent("SPELL_ACTIVATION_OVERLAY_GLOW_HIDE")
+	lib.eventFrame:RegisterEvent("SPELL_UPDATE_CHARGES")
+	lib.eventFrame:RegisterEvent("UPDATE_SUMMONPETS_ACTION")
 
 	-- With those two, do we still need the ACTIONBAR equivalents of them?
 	lib.eventFrame:RegisterEvent("SPELL_UPDATE_COOLDOWN")
@@ -725,6 +727,20 @@ function OnEvent(frame, event, arg1, ...)
 		for button in next, ActiveButtons do
 			if button._state_type == "item" then
 				Update(button)
+			end
+		end
+	elseif event == "SPELL_UPDATE_CHARGES" then
+		ForAllButtons(UpdateCount, true)
+	elseif event == "UPDATE_SUMMONPETS_ACTION" then
+		for button in next, ActiveButtons do
+			if button._state_type == "action" then
+				local actionType, id = GetActionInfo(button._state_action)
+				if actionType == "summonpet" then
+					local texture = GetActionTexture(button._state_action)
+					if texture then
+						button.icon:SetTexture(texture)
+					end
+				end
 			end
 		end
 	end
