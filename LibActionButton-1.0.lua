@@ -29,7 +29,7 @@ SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 
 ]]
 local MAJOR_VERSION = "LibActionButton-1.0"
-local MINOR_VERSION = 23
+local MINOR_VERSION = 24
 
 if not LibStub then error(MAJOR_VERSION .. " requires LibStub.") end
 local lib, oldversion = LibStub:NewLibrary(MAJOR_VERSION, MINOR_VERSION)
@@ -616,7 +616,8 @@ function InitializeEventHandler()
 	lib.eventFrame:RegisterEvent("PLAYER_ENTERING_WORLD")
 	lib.eventFrame:RegisterEvent("ACTIONBAR_SHOWGRID")
 	lib.eventFrame:RegisterEvent("ACTIONBAR_HIDEGRID")
-	lib.eventFrame:RegisterEvent("ACTIONBAR_PAGE_CHANGED")
+	--lib.eventFrame:RegisterEvent("ACTIONBAR_PAGE_CHANGED")
+	--lib.eventFrame:RegisterEvent("UPDATE_BONUS_ACTIONBAR")
 	lib.eventFrame:RegisterEvent("ACTIONBAR_SLOT_CHANGED")
 	lib.eventFrame:RegisterEvent("UPDATE_BINDINGS")
 	lib.eventFrame:RegisterEvent("UPDATE_SHAPESHIFT_FORM")
