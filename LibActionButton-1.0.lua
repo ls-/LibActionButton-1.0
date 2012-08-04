@@ -29,7 +29,7 @@ SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 
 ]]
 local MAJOR_VERSION = "LibActionButton-1.0"
-local MINOR_VERSION = 24
+local MINOR_VERSION = 25
 
 if not LibStub then error(MAJOR_VERSION .. " requires LibStub.") end
 local lib, oldversion = LibStub:NewLibrary(MAJOR_VERSION, MINOR_VERSION)
@@ -1349,6 +1349,14 @@ if oldversion and next(lib.buttonRegistry) then
 		SetupSecureSnippets(button)
 		if oldversion < 12 then
 			WrapOnClick(button)
+		end
+		if oldversion < 23 then
+			if button.overlay then
+				button.overlay:Hide()
+				ActionButton_HideOverlayGlow(button)
+				button.overlay = nil
+				UpdateOverlayGlow(button)
+			end
 		end
 	end
 end
