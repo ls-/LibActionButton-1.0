@@ -29,7 +29,7 @@ SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 
 ]]
 local MAJOR_VERSION = "LibActionButton-1.0"
-local MINOR_VERSION = 22
+local MINOR_VERSION = 23
 
 if not LibStub then error(MAJOR_VERSION .. " requires LibStub.") end
 local lib, oldversion = LibStub:NewLibrary(MAJOR_VERSION, MINOR_VERSION)
@@ -39,7 +39,7 @@ if not lib then return end
 local _G = _G
 local type, error, tostring, tonumber, assert, select = type, error, tostring, tonumber, assert, select
 local setmetatable, wipe, unpack, pairs, next = setmetatable, wipe, unpack, pairs, next
-local str_match, format = string.match, format
+local str_match, format, tinsert, tremove = string.match, format, tinsert, tremove
 
 local KeyBound = LibStub("LibKeyBound-1.0", true)
 local CBH = LibStub("CallbackHandler-1.0")
@@ -49,6 +49,9 @@ lib.eventFrame:UnregisterAllEvents()
 
 lib.buttonRegistry = lib.buttonRegistry or {}
 lib.activeButtons = lib.activeButtons or {}
+
+lib.unusedOverlayGlows = lib.unusedOverlayGlows or {}
+lib.numOverlays = lib.numOverlays or 0
 
 lib.callbacks = lib.callbacks or CBH:New(lib)
 
@@ -88,6 +91,7 @@ local ButtonRegistry, ActiveButtons = lib.buttonRegistry, lib.activeButtons
 local Update, UpdateButtonState, UpdateUsable, UpdateCount, UpdateCooldown, UpdateTooltip
 local StartFlash, StopFlash, UpdateFlash, UpdateHotkeys, UpdateRangeTimer, UpdateOverlayGlow
 local UpdateFlyout, ShowGrid, HideGrid, UpdateGrid, SetupSecureSnippets, WrapOnClick
+local ShowOverlayGlow, HideOverlayGlow, GetOverlayGlow, OverlayGlowAnimOutFinished
 
 local InitializeEventHandler, OnEvent, ForAllButtons, OnUpdate
 
@@ -713,14 +717,14 @@ function OnEvent(frame, event, arg1, ...)
 		for button in next, ActiveButtons do
 			local spellId = button:GetSpellId()
 			if spellId and spellId == arg1 then
-				ActionButton_ShowOverlayGlow(button)
+				ShowOverlayGlow(button)
 			end
 		end
 	elseif event == "SPELL_ACTIVATION_OVERLAY_GLOW_HIDE" then
 		for button in next, ActiveButtons do
 			local spellId = button:GetSpellId()
 			if spellId and spellId == arg1 then
-				ActionButton_HideOverlayGlow(button)
+				HideOverlayGlow(button)
 			end
 		end
 	elseif event == "PLAYER_EQUIPMENT_CHANGED" then
@@ -1089,12 +1093,70 @@ function UpdateHotkeys(self)
 	end
 end
 
+local function OverlayGlow_OnHide(self)
+	if self.animOut:IsPlaying() then
+		self.animOut:Stop()
+		OverlayGlowAnimOutFinished(self.animOut)
+	end
+end
+
+function GetOverlayGlow()
+	local overlay = tremove(lib.unusedOverlayGlows);
+	if not overlay then
+		lib.numOverlays = lib.numOverlays + 1
+		overlay = CreateFrame("Frame", "LAB10ActionButtonOverlay"..lib.numOverlays, UIParent, "ActionBarButtonSpellActivationAlert")
+		overlay.animOut:SetScript("OnFinished", OverlayGlowAnimOutFinished)
+		overlay:SetScript("OnHide", OverlayGlow_OnHide)
+	end
+	return overlay
+end
+
+function ShowOverlayGlow(self)
+	if self.overlay then
+		if self.overlay.animOut:IsPlaying() then
+			self.overlay.animOut:Stop()
+			self.overlay.animIn:Play()
+		end
+	else
+		self.overlay = GetOverlayGlow()
+		local frameWidth, frameHeight = self:GetSize()
+		self.overlay:SetParent(self)
+		self.overlay:ClearAllPoints()
+		--Make the height/width available before the next frame:
+		self.overlay:SetSize(frameWidth * 1.4, frameHeight * 1.4)
+		self.overlay:SetPoint("TOPLEFT", self, "TOPLEFT", -frameWidth * 0.2, frameHeight * 0.2)
+		self.overlay:SetPoint("BOTTOMRIGHT", self, "BOTTOMRIGHT", frameWidth * 0.2, -frameHeight * 0.2)
+		self.overlay.animIn:Play()
+	end
+end
+
+function HideOverlayGlow(self)
+	if self.overlay then
+		if self.overlay.animIn:IsPlaying() then
+			self.overlay.animIn:Stop()
+		end
+		if self:IsVisible() then
+			self.overlay.animOut:Play()
+		else
+			OverlayGlowAnimOutFinished(self.overlay.animOut)
+		end
+	end
+end
+
+function OverlayGlowAnimOutFinished(animGroup)
+	local overlay = animGroup:GetParent()
+	local actionButton = overlay:GetParent()
+	overlay:Hide()
+	tinsert(lib.unusedOverlayGlows, overlay)
+	actionButton.overlay = nil
+end
+
 function UpdateOverlayGlow(self)
 	local spellId = self:GetSpellId()
 	if spellId and IsSpellOverlayed(spellId) then
-		ActionButton_ShowOverlayGlow(self)
+		ShowOverlayGlow(self)
 	else
-		ActionButton_HideOverlayGlow(self)
+		HideOverlayGlow(self)
 	end
 end
 
