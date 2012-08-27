@@ -29,7 +29,7 @@ SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 
 ]]
 local MAJOR_VERSION = "LibActionButton-1.0"
-local MINOR_VERSION = 28
+local MINOR_VERSION = 29
 
 if not LibStub then error(MAJOR_VERSION .. " requires LibStub.") end
 local lib, oldversion = LibStub:NewLibrary(MAJOR_VERSION, MINOR_VERSION)
@@ -181,6 +181,10 @@ function lib:CreateButton(id, name, header, config)
 	button.border             = _G[name .. "Border"]
 	button.cooldown           = _G[name .. "Cooldown"]
 	button.normalTexture      = _G[name .. "NormalTexture"]
+
+	-- adjust hotkey style for better readability
+	button.hotkey:SetFont("Fonts\\ARIALN.ttf", 13, "OUTLINE")
+	button.hotkey:SetVertexColor(0.75, 0.75, 0.75)
 
 	-- Store the button in the registry, needed for event and OnUpdate handling
 	if not next(ButtonRegistry) then
@@ -603,7 +607,7 @@ function Generic:UpdateConfig(config)
 	if self.config.outOfRangeColoring == "hotkey" then
 		self.outOfRange = nil
 	elseif oldconfig and oldconfig.outOfRangeColoring == "hotkey" then
-		self.hotkey:SetVertexColor(0.6, 0.6, 0.6)
+		self.hotkey:SetVertexColor(0.75, 0.75, 0.75)
 	end
 
 	if self.config.hideElements.macro then
@@ -813,7 +817,7 @@ function OnUpdate(_, elapsed)
 						if inRange == 0 then
 							hotkey:SetVertexColor(unpack(button.config.colors.range))
 						else
-							hotkey:SetVertexColor(0.6, 0.6, 0.6)
+							hotkey:SetVertexColor(0.75, 0.75, 0.75)
 						end
 					end
 				end
@@ -988,7 +992,7 @@ function Update(self)
 		if self.hotkey:GetText() == RANGE_INDICATOR then
 			self.hotkey:Hide()
 		else
-			self.hotkey:SetVertexColor(0.6, 0.6, 0.6)
+			self.hotkey:SetVertexColor(0.75, 0.75, 0.75)
 		end
 		if not self.LBFSkinned and not self.MasqueSkinned then
 			self.normalTexture:SetTexCoord(-0.15, 1.15, -0.15, 1.17)
