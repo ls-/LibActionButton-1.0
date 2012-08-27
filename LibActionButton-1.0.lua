@@ -29,7 +29,7 @@ SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 
 ]]
 local MAJOR_VERSION = "LibActionButton-1.0"
-local MINOR_VERSION = 27
+local MINOR_VERSION = 28
 
 if not LibStub then error(MAJOR_VERSION .. " requires LibStub.") end
 local lib, oldversion = LibStub:NewLibrary(MAJOR_VERSION, MINOR_VERSION)
@@ -125,6 +125,7 @@ local DefaultConfig = {
 	},
 	keyBoundTarget = false,
 	clickOnDown = false,
+	flyoutDirection = "UP",
 }
 
 --- Create a new action button.
@@ -610,8 +611,12 @@ function Generic:UpdateConfig(config)
 	else
 		self.actionName:Show()
 	end
+
+	self:SetAttribute("flyoutDirection", self.config.flyoutDirection)
+
 	UpdateHotkeys(self)
 	UpdateGrid(self)
+	UpdateFlyout(self)
 	Update(self)
 	self:RegisterForClicks(self.config.clickOnDown and "AnyDown" or "AnyUp")
 end
