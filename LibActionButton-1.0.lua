@@ -752,6 +752,13 @@ function OnEvent(frame, event, arg1, ...)
 			local spellId = button:GetSpellId()
 			if spellId and spellId == arg1 then
 				ShowOverlayGlow(button)
+			else
+				if button._state_type == "action" then
+					local actionType, id = GetActionInfo(button._state_action)
+					if actionType == "flyout" and FlyoutHasSpell(id, arg1) then
+						ShowOverlayGlow(button)
+					end
+				end
 			end
 		end
 	elseif event == "SPELL_ACTIVATION_OVERLAY_GLOW_HIDE" then
@@ -759,6 +766,13 @@ function OnEvent(frame, event, arg1, ...)
 			local spellId = button:GetSpellId()
 			if spellId and spellId == arg1 then
 				HideOverlayGlow(button)
+			else
+				if button._state_type == "action" then
+					local actionType, id = GetActionInfo(button._state_action)
+					if actionType == "flyout" and FlyoutHasSpell(id, arg1) then
+						HideOverlayGlow(button)
+					end
+				end
 			end
 		end
 	elseif event == "PLAYER_EQUIPMENT_CHANGED" then
@@ -1205,6 +1219,13 @@ function UpdateOverlayGlow(self)
 	local spellId = self:GetSpellId()
 	if spellId and IsSpellOverlayed(spellId) then
 		ShowOverlayGlow(self)
+	elseif self._state_type == "action" then
+		local actionType, id = GetActionInfo(self._state_action)
+		if actionType == "flyout" and FlyoutHasSpell(id, arg1) then
+			ShowOverlayGlow(self)
+		else
+			HideOverlayGlow(self)
+		end
 	else
 		HideOverlayGlow(self)
 	end
