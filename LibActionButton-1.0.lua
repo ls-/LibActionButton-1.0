@@ -29,7 +29,7 @@ SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 
 ]]
 local MAJOR_VERSION = "LibActionButton-1.0"
-local MINOR_VERSION = 33
+local MINOR_VERSION = 34
 
 if not LibStub then error(MAJOR_VERSION .. " requires LibStub.") end
 local lib, oldversion = LibStub:NewLibrary(MAJOR_VERSION, MINOR_VERSION)
@@ -1344,7 +1344,7 @@ Action.GetSpellId              = function(self)
 		return spellId
 	end
 end
-Generic.GetLossOfControlCooldown = function(self) return GetActionLossOfControlCooldown(self._state_action) end
+Action.GetLossOfControlCooldown = function(self) return GetActionLossOfControlCooldown(self._state_action) end
 
 -----------------------------------------------------------
 --- Spell Button
