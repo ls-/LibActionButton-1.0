@@ -305,8 +305,8 @@ function SetupSecureSnippets(button)
 			-- We can only use a handful of the possible things on the cursor
 			-- return false for all those we can't put on buttons
 
-			self:SetAttribute(format("labtype-%d", state), kind)
-			self:SetAttribute(format("labaction-%d", state), value)
+			self:SetAttribute(format("labtype-%s", state), kind)
+			self:SetAttribute(format("labaction-%s", state), value)
 			-- update internal state
 			self:RunAttribute("UpdateState", state)
 			-- send a notification to the insecure code
