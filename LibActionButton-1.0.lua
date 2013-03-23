@@ -29,7 +29,7 @@ SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 
 ]]
 local MAJOR_VERSION = "LibActionButton-1.0"
-local MINOR_VERSION = 35
+local MINOR_VERSION = 36
 
 if not LibStub then error(MAJOR_VERSION .. " requires LibStub.") end
 local lib, oldversion = LibStub:NewLibrary(MAJOR_VERSION, MINOR_VERSION)
@@ -561,13 +561,13 @@ function Generic:PostClick()
 			self._old_type = nil
 		end
 		local oldType, oldAction = self._state_type, self._state_action
-		local a, b, c = GetCursorInfo()
+		local kind, data, subtype, extra = GetCursorInfo()
 		self.header:SetFrameRef("updateButton", self)
 		self.header:Execute(format([[
 			local frame = self:GetFrameRef("updateButton")
-			control:RunFor(frame, frame:GetAttribute("OnReceiveDrag"), %s, %s, %s)
+			control:RunFor(frame, frame:GetAttribute("OnReceiveDrag"), %s, %s, %s, %s)
 			control:RunFor(frame, frame:GetAttribute("UpdateState"), %s)
-		]], formatHelper(a), formatHelper(b), formatHelper(c), formatHelper(self:GetAttribute("state"))))
+		]], formatHelper(kind), formatHelper(data), formatHelper(subtype), formatHelper(extra), formatHelper(self:GetAttribute("state"))))
 		PickupAny("clear", oldType, oldAction)
 	end
 	self._receiving_drag = nil
