@@ -29,7 +29,7 @@ SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 
 ]]
 local MAJOR_VERSION = "LibActionButton-1.0"
-local MINOR_VERSION = 37
+local MINOR_VERSION = 38
 
 if not LibStub then error(MAJOR_VERSION .. " requires LibStub.") end
 local lib, oldversion = LibStub:NewLibrary(MAJOR_VERSION, MINOR_VERSION)
@@ -452,7 +452,7 @@ end
 
 function Generic:ButtonContentsChanged(state, kind, value)
 	state = tostring(state)
-	self.state_types[state] = kind or "emtpy"
+	self.state_types[state] = kind or "empty"
 	self.state_actions[state] = value
 	lib.callbacks:Fire("OnButtonContentsChanged", self, state, self.state_types[state], self.state_actions[state])
 	self:UpdateAction(self)
