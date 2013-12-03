@@ -29,7 +29,7 @@ SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 
 ]]
 local MAJOR_VERSION = "LibActionButton-1.0"
-local MINOR_VERSION = 39
+local MINOR_VERSION = 40
 
 if not LibStub then error(MAJOR_VERSION .. " requires LibStub.") end
 local lib, oldversion = LibStub:NewLibrary(MAJOR_VERSION, MINOR_VERSION)
@@ -64,6 +64,8 @@ lib.eventFrame:UnregisterAllEvents()
 
 lib.buttonRegistry = lib.buttonRegistry or {}
 lib.activeButtons = lib.activeButtons or {}
+lib.actionButtons = lib.actionButtons or {}
+lib.nonActionButtons = lib.nonActionButtons or {}
 
 lib.unusedOverlayGlows = lib.unusedOverlayGlows or {}
 lib.numOverlays = lib.numOverlays or 0
@@ -101,7 +103,7 @@ local type_meta_map = {
 	custom = Custom_MT
 }
 
-local ButtonRegistry, ActiveButtons = lib.buttonRegistry, lib.activeButtons
+local ButtonRegistry, ActiveButtons, ActionButtons, NonActionButtons = lib.buttonRegistry, lib.activeButtons, lib.actionButtons, lib.nonActionButtons
 
 local Update, UpdateButtonState, UpdateUsable, UpdateCount, UpdateCooldown, UpdateLossOfControlCooldown, UpdateTooltip
 local StartFlash, StopFlash, UpdateFlash, UpdateHotkeys, UpdateRangeTimer, UpdateOverlayGlow
@@ -708,11 +710,24 @@ function OnEvent(frame, event, arg1, ...)
 		((event == "UNIT_ENTERED_VEHICLE" or event == "UNIT_EXITED_VEHICLE") and (arg1 == "player")) or
 		((event == "COMPANION_UPDATE") and (arg1 == "MOUNT")) then
 		ForAllButtons(UpdateButtonState, true)
-	elseif event == "ACTIONBAR_UPDATE_USABLE" or event == "SPELL_UPDATE_USABLE" then
-		ForAllButtons(UpdateUsable, true)
-	elseif event == "ACTIONBAR_UPDATE_COOLDOWN" or event == "SPELL_UPDATE_COOLDOWN" then
-		ForAllButtons(UpdateCooldown, true)
-		for button in next, ActiveButtons do
+	elseif event == "ACTIONBAR_UPDATE_USABLE" then
+		for button in next, ActionButtons do
+			UpdateUsable(button)
+		end
+	elseif event == "SPELL_UPDATE_USABLE" then
+		for button in next, NonActionButtons do
+			UpdateUsable(button)
+		end
+	elseif event == "ACTIONBAR_UPDATE_COOLDOWN" then
+		for button in next, ActionButtons do
+			UpdateCooldown(button)
+			if GameTooltip:GetOwner() == button then
+				UpdateTooltip(button)
+			end
+		end
+	elseif event == "SPELL_UPDATE_COOLDOWN" then
+		for button in next, NonActionButtons do
+			UpdateCooldown(button)
 			if GameTooltip:GetOwner() == button then
 				UpdateTooltip(button)
 			end
@@ -964,6 +979,13 @@ end
 function Update(self)
 	if self:HasAction() then
 		ActiveButtons[self] = true
+		if self._state_type == "action" then
+			ActionButtons[self] = true
+			NonActionButtons[self] = nil
+		else
+			ActionButtons[self] = nil
+			NonActionButtons[self] = true
+		end
 		self:SetAlpha(1.0)
 		UpdateButtonState(self)
 		UpdateUsable(self)
@@ -972,6 +994,8 @@ function Update(self)
 		UpdateFlash(self)
 	else
 		ActiveButtons[self] = nil
+		ActionButtons[self] = nil
+		NonActionButtons[self] = nil
 		if gridCounter == 0 and not self.config.showGrid then
 			self:SetAlpha(0.0)
 		end
