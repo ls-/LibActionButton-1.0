@@ -627,10 +627,10 @@ end
 -----------------------------------------------------------
 --- event handler
 
-function ForAllButtons(method, onlyWithAction, ...)
+function ForAllButtons(method, onlyWithAction)
 	assert(type(method) == "function")
 	for button in next, (onlyWithAction and ActiveButtons or ButtonRegistry) do
-		method(button, ...)
+		method(button)
 	end
 end
 
