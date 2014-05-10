@@ -29,7 +29,7 @@ SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 
 ]]
 local MAJOR_VERSION = "LibActionButton-1.0"
-local MINOR_VERSION = 41
+local MINOR_VERSION = 42
 
 if not LibStub then error(MAJOR_VERSION .. " requires LibStub.") end
 local lib, oldversion = LibStub:NewLibrary(MAJOR_VERSION, MINOR_VERSION)
@@ -951,6 +951,7 @@ function Generic:SetKey(key)
 	else
 		SetBindingClick(key, self:GetName(), "LeftButton")
 	end
+	lib.callbacks:Fire("OnKeybindingChanged", self, key)
 end
 
 local function clearBindings(binding)
@@ -964,6 +965,7 @@ function Generic:ClearBindings()
 		clearBindings(self.config.keyBoundTarget)
 	end
 	clearBindings("CLICK "..self:GetName()..":LeftButton")
+	lib.callbacks:Fire("OnKeybindingChanged", self, nil)
 end
 
 -----------------------------------------------------------
