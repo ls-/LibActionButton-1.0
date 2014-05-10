@@ -29,7 +29,7 @@ SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 
 ]]
 local MAJOR_VERSION = "LibActionButton-1.0"
-local MINOR_VERSION = 40
+local MINOR_VERSION = 41
 
 if not LibStub then error(MAJOR_VERSION .. " requires LibStub.") end
 local lib, oldversion = LibStub:NewLibrary(MAJOR_VERSION, MINOR_VERSION)
@@ -376,6 +376,13 @@ end
 function Generic:ClearSetPoint(...)
 	self:ClearAllPoints()
 	self:SetPoint(...)
+end
+
+function Generic:NewHeader(header)
+	self.header = header
+	self:SetParent(header)
+	SetupSecureSnippets(self)
+	WrapOnClick(self)
 end
 
 
