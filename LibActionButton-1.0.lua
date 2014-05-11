@@ -29,7 +29,7 @@ SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 
 ]]
 local MAJOR_VERSION = "LibActionButton-1.0"
-local MINOR_VERSION = 42
+local MINOR_VERSION = 43
 
 if not LibStub then error(MAJOR_VERSION .. " requires LibStub.") end
 local lib, oldversion = LibStub:NewLibrary(MAJOR_VERSION, MINOR_VERSION)
@@ -909,6 +909,10 @@ end
 
 -----------------------------------------------------------
 --- KeyBound integration
+
+function Generic:GetBindingAction()
+	return self.config.keyBoundTarget or "CLICK "..self:GetName()..":LeftButton"
+end
 
 function Generic:GetHotkey()
 	local name = "CLICK "..self:GetName()..":LeftButton"
