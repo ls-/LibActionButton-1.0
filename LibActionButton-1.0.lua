@@ -105,7 +105,7 @@ local type_meta_map = {
 
 local ButtonRegistry, ActiveButtons, ActionButtons, NonActionButtons = lib.buttonRegistry, lib.activeButtons, lib.actionButtons, lib.nonActionButtons
 
-local Update, UpdateButtonState, UpdateUsable, UpdateCount, UpdateCooldown, UpdateLossOfControlCooldown, UpdateTooltip
+local Update, UpdateButtonState, UpdateUsable, UpdateCount, UpdateCooldown, UpdateTooltip
 local StartFlash, StopFlash, UpdateFlash, UpdateHotkeys, UpdateRangeTimer, UpdateOverlayGlow
 local UpdateFlyout, ShowGrid, HideGrid, UpdateGrid, SetupSecureSnippets, WrapOnClick
 local ShowOverlayGlow, HideOverlayGlow, GetOverlayGlow, OverlayGlowAnimOutFinished
@@ -683,7 +683,7 @@ function InitializeEventHandler()
 	lib.eventFrame:RegisterEvent("SPELL_UPDATE_USABLE")
 	lib.eventFrame:RegisterEvent("PLAYER_EQUIPMENT_CHANGED")
 
-	lib.eventFrame:RegisterEvent("LOSS_OF_CONTROL_UPDATE")
+	lib.eventFrame:RegisterEvent("LOSS_OF_CONTROL_ADDED")
 
 	lib.eventFrame:Show()
 	lib.eventFrame:SetScript("OnUpdate", OnUpdate)
@@ -739,8 +739,13 @@ function OnEvent(frame, event, arg1, ...)
 				UpdateTooltip(button)
 			end
 		end
-	elseif event == "LOSS_OF_CONTROL_UPDATE" then
-		ForAllButtons(UpdateLossOfControlCooldown, true)
+	elseif event == "LOSS_OF_CONTROL_ADDED" then
+		for button in next, ActiveButtons do
+			UpdateCooldown(button)
+			if GameTooltip:GetOwner() == button then
+				UpdateTooltip(button)
+			end
+		end
 	elseif event == "TRADE_SKILL_SHOW" or event == "TRADE_SKILL_CLOSE"  or event == "ARCHAEOLOGY_CLOSED" then
 		ForAllButtons(UpdateButtonState, true)
 	elseif event == "PLAYER_ENTER_COMBAT" then
@@ -1003,7 +1008,6 @@ function Update(self)
 		UpdateButtonState(self)
 		UpdateUsable(self)
 		UpdateCooldown(self)
-		UpdateLossOfControlCooldown(self)
 		UpdateFlash(self)
 	else
 		ActiveButtons[self] = nil
@@ -1139,13 +1143,28 @@ function UpdateCount(self)
 end
 
 function UpdateCooldown(self)
+	local locStart, locDuration = self:GetLossOfControlCooldown()
 	local start, duration, enable, charges, maxCharges = self:GetCooldown()
-	CooldownFrame_SetTimer(self.cooldown, start, duration, enable, charges, maxCharges)
-end
 
-function UpdateLossOfControlCooldown(self)
-	local start, duration = self:GetLossOfControlCooldown()
-	self.cooldown:SetLossOfControlCooldown(start, duration)
+	if (locStart + locDuration) > (start + duration) then
+		if self.cooldown.currentCooldownType ~= COOLDOWN_TYPE_LOSS_OF_CONTROL then
+			self.cooldown:SetEdgeTexture("Interface\\Cooldown\\edge-LoC")
+			self.cooldown:SetSwipeColor(0.17, 0, 0)
+			self.cooldown:SetHideCountdownNumbers(true)
+			self.cooldown.currentCooldownType = COOLDOWN_TYPE_LOSS_OF_CONTROL
+		end
+
+		CooldownFrame_SetTimer(self.cooldown, locStart, locDuration, 1, nil, nil, true)
+	else
+		if self.cooldown.currentCooldownType ~= COOLDOWN_TYPE_NORMAL then
+			self.cooldown:SetEdgeTexture("Interface\\Cooldown\\edge")
+			self.cooldown:SetSwipeColor(0, 0, 0)
+			self.cooldown:SetHideCountdownNumbers(false)
+			self.cooldown.currentCooldownType = COOLDOWN_TYPE_NORMAL
+		end
+
+		CooldownFrame_SetTimer(self.cooldown, start, duration, enable, charges, maxCharges)
+	end
 end
 
 function StartFlash(self)
