@@ -846,20 +846,20 @@ function OnUpdate(_, elapsed)
 			if rangeTimer <= 0 then
 				local inRange = button:IsInRange()
 				local oldRange = button.outOfRange
-				button.outOfRange = (inRange == 0)
+				button.outOfRange = (inRange == false)
 				if oldRange ~= button.outOfRange then
 					if button.config.outOfRangeColoring == "button" then
 						UpdateUsable(button)
 					elseif button.config.outOfRangeColoring == "hotkey" then
 						local hotkey = button.hotkey
 						if hotkey:GetText() == RANGE_INDICATOR then
-							if inRange then
+							if inRange ~= nil then
 								hotkey:Show()
 							else
 								hotkey:Hide()
 							end
 						end
-						if inRange == 0 then
+						if inRange == false then
 							hotkey:SetVertexColor(unpack(button.config.colors.range))
 						else
 							hotkey:SetVertexColor(0.75, 0.75, 0.75)
@@ -1362,7 +1362,10 @@ Generic.IsInRange               = function(self)
 	if unit == "player" then
 		unit = nil
 	end
-	return self:IsUnitInRange(unit)
+	local val = self:IsUnitInRange(unit)
+	-- map 1/0 to true false, since the return values are inconsistent between actions and spells
+	if val == 1 then val = true elseif val == 0 then val = false end
+	return val
 end
 Generic.SetTooltip              = function(self) return nil end
 Generic.GetSpellId              = function(self) return nil end
