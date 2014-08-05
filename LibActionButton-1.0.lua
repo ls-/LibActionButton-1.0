@@ -173,22 +173,9 @@ function lib:CreateButton(id, name, header, config)
 	SetupSecureSnippets(button)
 	WrapOnClick(button)
 
-	-- Store all sub frames on the button object for easier access
-	button.icon               = _G[name .. "Icon"]
-	button.flash              = _G[name .. "Flash"]
-	button.FlyoutBorder       = _G[name .. "FlyoutBorder"]
-	button.FlyoutBorderShadow = _G[name .. "FlyoutBorderShadow"]
-	button.FlyoutArrow        = _G[name .. "FlyoutArrow"]
-	button.hotkey             = _G[name .. "HotKey"]
-	button.count              = _G[name .. "Count"]
-	button.actionName         = _G[name .. "Name"]
-	button.border             = _G[name .. "Border"]
-	button.cooldown           = _G[name .. "Cooldown"]
-	button.normalTexture      = _G[name .. "NormalTexture"]
-
 	-- adjust hotkey style for better readability
-	button.hotkey:SetFont(button.hotkey:GetFont(), 13, "OUTLINE")
-	button.hotkey:SetVertexColor(0.75, 0.75, 0.75)
+	button.HotKey:SetFont(button.HotKey:GetFont(), 13, "OUTLINE")
+	button.HotKey:SetVertexColor(0.75, 0.75, 0.75)
 
 	-- Store the button in the registry, needed for event and OnUpdate handling
 	if not next(ButtonRegistry) then
@@ -623,13 +610,13 @@ function Generic:UpdateConfig(config)
 	if self.config.outOfRangeColoring == "hotkey" then
 		self.outOfRange = nil
 	elseif oldconfig and oldconfig.outOfRangeColoring == "hotkey" then
-		self.hotkey:SetVertexColor(0.75, 0.75, 0.75)
+		self.HotKey:SetVertexColor(0.75, 0.75, 0.75)
 	end
 
 	if self.config.hideElements.macro then
-		self.actionName:Hide()
+		self.Name:Hide()
 	else
-		self.actionName:Show()
+		self.Name:Show()
 	end
 
 	self:SetAttribute("flyoutDirection", self.config.flyoutDirection)
@@ -842,10 +829,10 @@ function OnUpdate(_, elapsed)
 		for button in next, ActiveButtons do
 			-- Flashing
 			if button.flashing == 1 and flashTime <= 0 then
-				if button.flash:IsShown() then
-					button.flash:Hide()
+				if button.Flash:IsShown() then
+					button.Flash:Hide()
 				else
-					button.flash:Show()
+					button.Flash:Show()
 				end
 			end
 
@@ -858,7 +845,7 @@ function OnUpdate(_, elapsed)
 					if button.config.outOfRangeColoring == "button" then
 						UpdateUsable(button)
 					elseif button.config.outOfRangeColoring == "hotkey" then
-						local hotkey = button.hotkey
+						local hotkey = button.HotKey
 						if hotkey:GetText() == RANGE_INDICATOR then
 							if inRange ~= nil then
 								hotkey:Show()
@@ -1029,17 +1016,17 @@ function Update(self)
 
 	-- Add a green border if button is an equipped item
 	if self:IsEquipped() and not self.config.hideElements.equipped then
-		self.border:SetVertexColor(0, 1.0, 0, 0.35)
-		self.border:Show()
+		self.Border:SetVertexColor(0, 1.0, 0, 0.35)
+		self.Border:Show()
 	else
-		self.border:Hide()
+		self.Border:Hide()
 	end
 
 	-- Update Action Text
 	if not self:IsConsumableOrStackable() then
-		self.actionName:SetText(self:GetActionText())
+		self.Name:SetText(self:GetActionText())
 	else
-		self.actionName:SetText("")
+		self.Name:SetText("")
 	end
 
 	-- Update icon and hotkey
@@ -1050,20 +1037,20 @@ function Update(self)
 		self.rangeTimer = - 1
 		self:SetNormalTexture("Interface\\Buttons\\UI-Quickslot2")
 		if not self.LBFSkinned and not self.MasqueSkinned then
-			self.normalTexture:SetTexCoord(0, 0, 0, 0)
+			self.NormalTexture:SetTexCoord(0, 0, 0, 0)
 		end
 	else
 		self.icon:Hide()
 		self.cooldown:Hide()
 		self.rangeTimer = nil
 		self:SetNormalTexture("Interface\\Buttons\\UI-Quickslot")
-		if self.hotkey:GetText() == RANGE_INDICATOR then
-			self.hotkey:Hide()
+		if self.HotKey:GetText() == RANGE_INDICATOR then
+			self.HotKey:Hide()
 		else
-			self.hotkey:SetVertexColor(0.75, 0.75, 0.75)
+			self.HotKey:SetVertexColor(0.75, 0.75, 0.75)
 		end
 		if not self.LBFSkinned and not self.MasqueSkinned then
-			self.normalTexture:SetTexCoord(-0.15, 1.15, -0.15, 1.17)
+			self.NormalTexture:SetTexCoord(-0.15, 1.15, -0.15, 1.17)
 		end
 	end
 
@@ -1117,13 +1104,13 @@ function UpdateUsable(self)
 		local isUsable, notEnoughMana = self:IsUsable()
 		if isUsable then
 			self.icon:SetVertexColor(1.0, 1.0, 1.0)
-			--self.normalTexture:SetVertexColor(1.0, 1.0, 1.0)
+			--self.NormalTexture:SetVertexColor(1.0, 1.0, 1.0)
 		elseif notEnoughMana then
 			self.icon:SetVertexColor(unpack(self.config.colors.mana))
-			--self.normalTexture:SetVertexColor(0.5, 0.5, 1.0)
+			--self.NormalTexture:SetVertexColor(0.5, 0.5, 1.0)
 		else
 			self.icon:SetVertexColor(0.4, 0.4, 0.4)
-			--self.normalTexture:SetVertexColor(1.0, 1.0, 1.0)
+			--self.NormalTexture:SetVertexColor(1.0, 1.0, 1.0)
 		end
 	end
 	lib.callbacks:Fire("OnButtonUsable", self)
@@ -1131,22 +1118,22 @@ end
 
 function UpdateCount(self)
 	if not self:HasAction() then
-		self.count:SetText("")
+		self.Count:SetText("")
 		return
 	end
 	if self:IsConsumableOrStackable() then
 		local count = self:GetCount()
 		if count > (self.maxDisplayCount or 9999) then
-			self.count:SetText("*")
+			self.Count:SetText("*")
 		else
-			self.count:SetText(count)
+			self.Count:SetText(count)
 		end
 	else
 		local charges, maxCharges, chargeStart, chargeDuration = self:GetCharges()
 		if charges and maxCharges and maxCharges > 0 then
-			self.count:SetText(charges)
+			self.Count:SetText(charges)
 		else
-			self.count:SetText("")
+			self.Count:SetText("")
 		end
 	end
 end
@@ -1184,7 +1171,7 @@ end
 
 function StopFlash(self)
 	self.flashing = 0
-	self.flash:Hide()
+	self.Flash:Hide()
 	UpdateButtonState(self)
 end
 
@@ -1212,13 +1199,13 @@ end
 function UpdateHotkeys(self)
 	local key = self:GetHotkey()
 	if not key or key == "" or self.config.hideElements.hotkey then
-		self.hotkey:SetText(RANGE_INDICATOR)
-		self.hotkey:SetPoint("TOPLEFT", self, "TOPLEFT", 1, - 2)
-		self.hotkey:Hide()
+		self.HotKey:SetText(RANGE_INDICATOR)
+		self.HotKey:SetPoint("TOPLEFT", self, "TOPLEFT", 1, - 2)
+		self.HotKey:Hide()
 	else
-		self.hotkey:SetText(key)
-		self.hotkey:SetPoint("TOPLEFT", self, "TOPLEFT", - 2, - 2)
-		self.hotkey:Show()
+		self.HotKey:SetText(key)
+		self.HotKey:SetPoint("TOPLEFT", self, "TOPLEFT", - 2, - 2)
+		self.HotKey:Show()
 	end
 end
 
