@@ -1013,7 +1013,7 @@ function Update(self)
 			self:SetAlpha(0.0)
 		end
 		self.cooldown:Hide()
-		self:SetChecked(0)
+		self:SetChecked(false)
 	end
 
 	-- Add a green border if button is an equipped item
@@ -1088,9 +1088,9 @@ end
 
 function UpdateButtonState(self)
 	if self:IsCurrentlyActive() or self:IsAutoRepeat() then
-		self:SetChecked(1)
+		self:SetChecked(true)
 	else
-		self:SetChecked(0)
+		self:SetChecked(false)
 	end
 	lib.callbacks:Fire("OnButtonState", self)
 end
