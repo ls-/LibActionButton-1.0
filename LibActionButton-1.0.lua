@@ -70,6 +70,8 @@ lib.nonActionButtons = lib.nonActionButtons or {}
 lib.unusedOverlayGlows = lib.unusedOverlayGlows or {}
 lib.numOverlays = lib.numOverlays or 0
 
+lib.ACTION_HIGHLIGHT_MARKS = lib.ACTION_HIGHLIGHT_MARKS or setmetatable({}, { __index = ACTION_HIGHLIGHT_MARKS })
+
 lib.callbacks = lib.callbacks or CBH:New(lib)
 
 local Generic = CreateFrame("CheckButton")
@@ -105,7 +107,7 @@ local type_meta_map = {
 
 local ButtonRegistry, ActiveButtons, ActionButtons, NonActionButtons = lib.buttonRegistry, lib.activeButtons, lib.actionButtons, lib.nonActionButtons
 
-local Update, UpdateButtonState, UpdateUsable, UpdateCount, UpdateCooldown, UpdateTooltip
+local Update, UpdateButtonState, UpdateUsable, UpdateCount, UpdateCooldown, UpdateTooltip, UpdateNewAction
 local StartFlash, StopFlash, UpdateFlash, UpdateHotkeys, UpdateRangeTimer, UpdateOverlayGlow
 local UpdateFlyout, ShowGrid, HideGrid, UpdateGrid, SetupSecureSnippets, WrapOnClick
 local ShowOverlayGlow, HideOverlayGlow, GetOverlayGlow, OverlayGlowAnimOutFinished
@@ -527,6 +529,11 @@ function Generic:OnEnter()
 	end
 	if KeyBound then
 		KeyBound:Set(self)
+	end
+
+	if self._state_type == "action" and self.NewActionTexture then
+		lib.ACTION_HIGHLIGHT_MARKS[self._state_action] = false
+		UpdateNewAction(self)
 	end
 end
 
@@ -1068,6 +1075,8 @@ function Update(self)
 
 	UpdateOverlayGlow(self)
 
+	UpdateNewAction(self)
+
 	if GameTooltip:GetOwner() == self then
 		UpdateTooltip(self)
 	end
@@ -1277,6 +1286,26 @@ function UpdateOverlayGlow(self)
 		ShowOverlayGlow(self)
 	else
 		HideOverlayGlow(self)
+	end
+end
+
+hooksecurefunc("MarkNewActionHighlight", function(action, flag)
+	lib.ACTION_HIGHLIGHT_MARKS[action] = flag
+	for button in next, ButtonRegistry do
+		if button._state_type == "action" and action == tonumber(button._state_action) then
+			UpdateNewAction(button)
+		end
+	end
+end)
+
+function UpdateNewAction(self)
+	-- special handling for "New Action" markers
+	if self.NewActionTexture then
+		if self._state_type == "action" and lib.ACTION_HIGHLIGHT_MARKS[self._state_action] then
+			self.NewActionTexture:Show()
+		else
+			self.NewActionTexture:Hide()
+		end
 	end
 end
 
