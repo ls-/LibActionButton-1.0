@@ -29,7 +29,7 @@ SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 
 ]]
 local MAJOR_VERSION = "LibActionButton-1.0"
-local MINOR_VERSION = 52
+local MINOR_VERSION = 53
 
 if not LibStub then error(MAJOR_VERSION .. " requires LibStub.") end
 local lib, oldversion = LibStub:NewLibrary(MAJOR_VERSION, MINOR_VERSION)
@@ -1155,6 +1155,10 @@ end
 function UpdateCooldown(self)
 	local locStart, locDuration = self:GetLossOfControlCooldown()
 	local start, duration, enable, charges, maxCharges = self:GetCooldown()
+
+	-- HACK: only draw "bling" when button sufficiently visible
+	-- this stuff used to inherit alpha....
+	self.cooldown:SetDrawBling(self:GetEffectiveAlpha() > 0.5)
 
 	if (locStart + locDuration) > (start + duration) then
 		if self.cooldown.currentCooldownType ~= COOLDOWN_TYPE_LOSS_OF_CONTROL then
