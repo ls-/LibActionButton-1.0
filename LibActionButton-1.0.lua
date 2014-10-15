@@ -29,7 +29,7 @@ SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 
 ]]
 local MAJOR_VERSION = "LibActionButton-1.0"
-local MINOR_VERSION = 51
+local MINOR_VERSION = 52
 
 if not LibStub then error(MAJOR_VERSION .. " requires LibStub.") end
 local lib, oldversion = LibStub:NewLibrary(MAJOR_VERSION, MINOR_VERSION)
@@ -1155,19 +1155,21 @@ function UpdateCooldown(self)
 	if (locStart + locDuration) > (start + duration) then
 		if self.cooldown.currentCooldownType ~= COOLDOWN_TYPE_LOSS_OF_CONTROL then
 			self.cooldown:SetEdgeTexture("Interface\\Cooldown\\edge-LoC")
-			self.cooldown:SetSwipeColor(0.17, 0, 0)
 			self.cooldown:SetHideCountdownNumbers(true)
 			self.cooldown.currentCooldownType = COOLDOWN_TYPE_LOSS_OF_CONTROL
 		end
+		-- set swipe color and alpha
+		self.cooldown:SetSwipeColor(0.17, 0, 0, self:GetEffectiveAlpha() * 0.8)
 
 		CooldownFrame_SetTimer(self.cooldown, locStart, locDuration, 1, nil, nil, true)
 	else
 		if self.cooldown.currentCooldownType ~= COOLDOWN_TYPE_NORMAL then
 			self.cooldown:SetEdgeTexture("Interface\\Cooldown\\edge")
-			self.cooldown:SetSwipeColor(0, 0, 0)
 			self.cooldown:SetHideCountdownNumbers(false)
 			self.cooldown.currentCooldownType = COOLDOWN_TYPE_NORMAL
 		end
+		-- set swipe color and alpha
+		self.cooldown:SetSwipeColor(0, 0, 0, self:GetEffectiveAlpha() * 0.8)
 		if locStart > 0 then
 			self.cooldown:SetScript("OnCooldownDone", OnCooldownDone)
 		end
