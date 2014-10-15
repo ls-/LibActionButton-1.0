@@ -483,6 +483,10 @@ function Generic:AddToMasque(group)
 	self.MasqueSkinned = true
 end
 
+function Generic:UpdateAlpha()
+	UpdateCooldown(self)
+end
+
 -----------------------------------------------------------
 --- frame scripts
 
