@@ -29,7 +29,7 @@ SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 
 ]]
 local MAJOR_VERSION = "LibActionButton-1.0"
-local MINOR_VERSION = 53
+local MINOR_VERSION = 54
 
 if not LibStub then error(MAJOR_VERSION .. " requires LibStub.") end
 local lib, oldversion = LibStub:NewLibrary(MAJOR_VERSION, MINOR_VERSION)
@@ -176,6 +176,9 @@ function lib:CreateButton(id, name, header, config)
 	-- adjust hotkey style for better readability
 	button.HotKey:SetFont(button.HotKey:GetFont(), 13, "OUTLINE")
 	button.HotKey:SetVertexColor(0.75, 0.75, 0.75)
+
+	-- adjust count/stack size
+	button.Count:SetFont(button.Count:GetFont(), 16, "OUTLINE")
 
 	-- Store the button in the registry, needed for event and OnUpdate handling
 	if not next(ButtonRegistry) then
