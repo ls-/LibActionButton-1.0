@@ -29,7 +29,7 @@ SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 
 ]]
 local MAJOR_VERSION = "LibActionButton-1.0"
-local MINOR_VERSION = 55
+local MINOR_VERSION = 56
 
 if not LibStub then error(MAJOR_VERSION .. " requires LibStub.") end
 local lib, oldversion = LibStub:NewLibrary(MAJOR_VERSION, MINOR_VERSION)
@@ -111,6 +111,7 @@ local Update, UpdateButtonState, UpdateUsable, UpdateCount, UpdateCooldown, Upda
 local StartFlash, StopFlash, UpdateFlash, UpdateHotkeys, UpdateRangeTimer, UpdateOverlayGlow
 local UpdateFlyout, ShowGrid, HideGrid, UpdateGrid, SetupSecureSnippets, WrapOnClick
 local ShowOverlayGlow, HideOverlayGlow, GetOverlayGlow, OverlayGlowAnimOutFinished
+local HookCooldown
 
 local InitializeEventHandler, OnEvent, ForAllButtons, OnUpdate
 
@@ -179,6 +180,9 @@ function lib:CreateButton(id, name, header, config)
 
 	-- adjust count/stack size
 	button.Count:SetFont(button.Count:GetFont(), 16, "OUTLINE")
+
+	-- hook Cooldown stuff for alpha fix in 6.0
+	HookCooldown(button)
 
 	-- Store the button in the registry, needed for event and OnUpdate handling
 	if not next(ButtonRegistry) then
@@ -1150,6 +1154,48 @@ function UpdateCount(self)
 	end
 end
 
+local function SetCooldownHook(cooldown, ...)
+	local effectiveAlpha = cooldown:GetEffectiveAlpha()
+	local start, duration = ...
+
+	if start ~= 0 or duration ~= 0 then
+		-- update swipe alpha
+		cooldown:__SetSwipeColorLAB(cooldown.__SwipeR, cooldown.__SwipeG, cooldown.__SwipeB, cooldown.__SwipeA * effectiveAlpha)
+
+		-- only draw bling and edge if alpha is over 50%
+		cooldown:SetDrawBling(effectiveAlpha > 0.5)
+		if effectiveAlpha < 0.5 then
+			cooldown:SetDrawEdge(false)
+		end
+
+		-- ensure the swipe isn't drawn on fully faded bars
+		if effectiveAlpha <= 0.0 then
+			cooldown:SetDrawSwipe(false)
+		end
+	end
+
+	return cooldown:__SetCooldownLAB(...)
+end
+
+local function SetSwipeColorHook(cooldown, r, g, b, a)
+	local effectiveAlpha = cooldown:GetEffectiveAlpha()
+	cooldown.__SwipeR, cooldown.__SwipeG, cooldown.__SwipeB, cooldown.__SwipeA = r, g, b, (a or 1)
+	return cooldown:__SetSwipeColorLAB(r, g, b, a * effectiveAlpha)
+end
+
+function HookCooldown(button)
+	if not button.cooldown.__SetCooldownLAB then
+		button.cooldown.__SetCooldownLAB = button.cooldown.SetCooldown
+	end
+	button.cooldown.SetCooldown = SetCooldownHook
+
+	if not button.cooldown.__SetSwipeColorLAB then
+		button.cooldown.__SetSwipeColorLAB = button.cooldown.SetSwipeColor
+		button.cooldown.__SwipeR, button.cooldown.__SwipeG, button.cooldown.__SwipeB, button.cooldown.__SwipeA = 0, 0, 0, 0.8
+	end
+	button.cooldown.SetSwipeColor = SetSwipeColorHook
+end
+
 function OnCooldownDone(self)
 	self:SetScript("OnCooldownDone", nil)
 	UpdateCooldown(self:GetParent())
@@ -1159,37 +1205,25 @@ function UpdateCooldown(self)
 	local locStart, locDuration = self:GetLossOfControlCooldown()
 	local start, duration, enable, charges, maxCharges = self:GetCooldown()
 
-	local effectiveAlpha = self:GetEffectiveAlpha()
-	-- HACK: only draw "bling" when button sufficiently visible
-	-- this stuff used to inherit alpha....
-	self.cooldown:SetDrawBling(effectiveAlpha > 0.5)
-
 	if (locStart + locDuration) > (start + duration) then
 		if self.cooldown.currentCooldownType ~= COOLDOWN_TYPE_LOSS_OF_CONTROL then
 			self.cooldown:SetEdgeTexture("Interface\\Cooldown\\edge-LoC")
 			self.cooldown:SetHideCountdownNumbers(true)
 			self.cooldown.currentCooldownType = COOLDOWN_TYPE_LOSS_OF_CONTROL
+			self.cooldown:SetSwipeColor(0.17, 0, 0, 0.8)
 		end
-		-- set swipe color and alpha
-		self.cooldown:SetSwipeColor(0.17, 0, 0, effectiveAlpha * 0.8)
-
 		CooldownFrame_SetTimer(self.cooldown, locStart, locDuration, 1, nil, nil, true)
 	else
 		if self.cooldown.currentCooldownType ~= COOLDOWN_TYPE_NORMAL then
 			self.cooldown:SetEdgeTexture("Interface\\Cooldown\\edge")
 			self.cooldown:SetHideCountdownNumbers(false)
 			self.cooldown.currentCooldownType = COOLDOWN_TYPE_NORMAL
+			self.cooldown:SetSwipeColor(0, 0, 0, 0.8)
 		end
-		-- set swipe color and alpha
-		self.cooldown:SetSwipeColor(0, 0, 0, effectiveAlpha * 0.8)
 		if locStart > 0 then
 			self.cooldown:SetScript("OnCooldownDone", OnCooldownDone)
 		end
 		CooldownFrame_SetTimer(self.cooldown, start, duration, enable, charges, maxCharges)
-
-		if effectiveAlpha < 0.5 then
-			self.cooldown:SetDrawEdge(false)
-		end
 	end
 end
 
@@ -1530,6 +1564,7 @@ if oldversion and next(lib.buttonRegistry) then
 		-- this refreshes the metatable on the button
 		Generic.UpdateAction(button, true)
 		SetupSecureSnippets(button)
+		HookCooldown(button)
 		if oldversion < 12 then
 			WrapOnClick(button)
 		end
