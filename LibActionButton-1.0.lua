@@ -29,7 +29,7 @@ SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 
 ]]
 local MAJOR_VERSION = "LibActionButton-1.0"
-local MINOR_VERSION = 56
+local MINOR_VERSION = 57
 
 if not LibStub then error(MAJOR_VERSION .. " requires LibStub.") end
 local lib, oldversion = LibStub:NewLibrary(MAJOR_VERSION, MINOR_VERSION)
@@ -1160,7 +1160,7 @@ local function SetCooldownHook(cooldown, ...)
 
 	if start ~= 0 or duration ~= 0 then
 		-- update swipe alpha
-		cooldown:__SetSwipeColorLAB(cooldown.__SwipeR, cooldown.__SwipeG, cooldown.__SwipeB, cooldown.__SwipeA * effectiveAlpha)
+		cooldown.__metaLAB.SetSwipeColor(cooldown, cooldown.__SwipeR, cooldown.__SwipeG, cooldown.__SwipeB, cooldown.__SwipeA * effectiveAlpha)
 
 		-- only draw bling and edge if alpha is over 50%
 		cooldown:SetDrawBling(effectiveAlpha > 0.5)
@@ -1174,26 +1174,23 @@ local function SetCooldownHook(cooldown, ...)
 		end
 	end
 
-	return cooldown:__SetCooldownLAB(...)
+	return cooldown.__metaLAB.SetCooldown(cooldown, ...)
 end
 
 local function SetSwipeColorHook(cooldown, r, g, b, a)
 	local effectiveAlpha = cooldown:GetEffectiveAlpha()
 	cooldown.__SwipeR, cooldown.__SwipeG, cooldown.__SwipeB, cooldown.__SwipeA = r, g, b, (a or 1)
-	return cooldown:__SetSwipeColorLAB(r, g, b, a * effectiveAlpha)
+	return cooldown.__metaLAB.SetSwipeColor(cooldown, r, g, b, a * effectiveAlpha)
 end
 
 function HookCooldown(button)
-	if not button.cooldown.__SetCooldownLAB then
-		button.cooldown.__SetCooldownLAB = button.cooldown.SetCooldown
-	end
-	button.cooldown.SetCooldown = SetCooldownHook
-
-	if not button.cooldown.__SetSwipeColorLAB then
-		button.cooldown.__SetSwipeColorLAB = button.cooldown.SetSwipeColor
+	if not button.cooldown.__metaLAB then
+		button.cooldown.__metaLAB = getmetatable(button.cooldown).__index
 		button.cooldown.__SwipeR, button.cooldown.__SwipeG, button.cooldown.__SwipeB, button.cooldown.__SwipeA = 0, 0, 0, 0.8
+
+		button.cooldown.SetCooldown = SetCooldownHook
+		button.cooldown.SetSwipeColor = SetSwipeColorHook
 	end
-	button.cooldown.SetSwipeColor = SetSwipeColorHook
 end
 
 function OnCooldownDone(self)
@@ -1564,7 +1561,6 @@ if oldversion and next(lib.buttonRegistry) then
 		-- this refreshes the metatable on the button
 		Generic.UpdateAction(button, true)
 		SetupSecureSnippets(button)
-		HookCooldown(button)
 		if oldversion < 12 then
 			WrapOnClick(button)
 		end
