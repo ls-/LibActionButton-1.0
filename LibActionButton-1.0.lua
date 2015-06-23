@@ -1380,15 +1380,6 @@ function UpdateRangeTimer()
 	rangeTimer = -1
 end
 
-local function GetSpellIdByName(spellName)
-	if not spellName then return end
-	local spellLink = GetSpellLink(spellName)
-	if spellLink then
-		return tonumber(spellLink:match("spell:(%d+)"))
-	end
-	return nil
-end
-
 -----------------------------------------------------------
 --- WoW API mapping
 --- Generic Button
