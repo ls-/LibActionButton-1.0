@@ -29,7 +29,7 @@ SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 
 ]]
 local MAJOR_VERSION = "LibActionButton-1.0"
-local MINOR_VERSION = 61
+local MINOR_VERSION = 62
 
 if not LibStub then error(MAJOR_VERSION .. " requires LibStub.") end
 local lib, oldversion = LibStub:NewLibrary(MAJOR_VERSION, MINOR_VERSION)
@@ -487,6 +487,10 @@ function Generic:AddToMasque(group)
 	end
 	group:AddButton(self)
 	self.MasqueSkinned = true
+end
+
+function Generic:UpdateAlpha()
+	UpdateCooldown(self)
 end
 
 -----------------------------------------------------------
@@ -1196,6 +1200,7 @@ local function StartChargeCooldown(parent, chargeStart, chargeDuration)
 		parent.chargeCooldown = cooldown
 		cooldown.parent = parent
 	end
+	parent.chargeCooldown:SetDrawBling(parent.chargeCooldown:GetEffectiveAlpha() > 0.5)
 	parent.chargeCooldown:SetCooldown(chargeStart, chargeDuration)
 	if not chargeStart or chargeStart == 0 then
 		EndChargeCooldown(parent.chargeCooldown)
@@ -1211,6 +1216,8 @@ function UpdateCooldown(self)
 	local locStart, locDuration = self:GetLossOfControlCooldown()
 	local start, duration, enable = self:GetCooldown()
 	local charges, maxCharges, chargeStart, chargeDuration = self:GetCharges()
+
+	self.cooldown:SetDrawBling(self.cooldown:GetEffectiveAlpha() > 0.5)
 
 	if (locStart + locDuration) > (start + duration) then
 		if self.cooldown.currentCooldownType ~= COOLDOWN_TYPE_LOSS_OF_CONTROL then
