@@ -1201,10 +1201,6 @@ local function StartChargeCooldown(parent, chargeStart, chargeDuration)
 		parent.chargeCooldown = cooldown
 		cooldown.parent = parent
 	end
-	-- restore default size/position (in case Masque changed it, and we recycled it for another button)
-	parent.chargeCooldown:ClearAllPoints()
-	parent.chargeCooldown:SetAllPoints(parent)
-
 	-- set cooldown
 	parent.chargeCooldown:SetDrawBling(parent.chargeCooldown:GetEffectiveAlpha() > 0.5)
 	parent.chargeCooldown:SetCooldown(chargeStart, chargeDuration)
