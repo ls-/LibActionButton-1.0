@@ -29,7 +29,7 @@ SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 
 ]]
 local MAJOR_VERSION = "LibActionButton-1.0"
-local MINOR_VERSION = 63
+local MINOR_VERSION = 64
 
 if not LibStub then error(MAJOR_VERSION .. " requires LibStub.") end
 local lib, oldversion = LibStub:NewLibrary(MAJOR_VERSION, MINOR_VERSION)
@@ -1166,7 +1166,7 @@ function UpdateCount(self)
 		end
 	else
 		local charges, maxCharges, chargeStart, chargeDuration = self:GetCharges()
-		if charges and maxCharges and maxCharges > 0 then
+		if charges and maxCharges and maxCharges > 1 then
 			self.Count:SetText(charges)
 		else
 			self.Count:SetText("")
@@ -1238,7 +1238,7 @@ function UpdateCooldown(self)
 			self.cooldown:SetScript("OnCooldownDone", OnCooldownDone)
 		end
 
-		if charges and maxCharges and maxCharges > 0 and charges > 0 and charges < maxCharges then
+		if charges and maxCharges and charges > 0 and charges < maxCharges then
 			StartChargeCooldown(self, chargeStart, chargeDuration)
 		elseif self.chargeCooldown then
 			EndChargeCooldown(self.chargeCooldown)
