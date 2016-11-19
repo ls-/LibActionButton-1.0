@@ -1188,7 +1188,7 @@ function EndChargeCooldown(self)
 	tinsert(lib.ChargeCooldowns, self)
 end
 
-local function StartChargeCooldown(parent, chargeStart, chargeDuration)
+local function StartChargeCooldown(parent, chargeStart, chargeDuration, chargeModRate)
 	if not parent.chargeCooldown then
 		local cooldown = tremove(lib.ChargeCooldowns)
 		if not cooldown then
@@ -1196,7 +1196,6 @@ local function StartChargeCooldown(parent, chargeStart, chargeDuration)
 			cooldown = CreateFrame("Cooldown", "LAB10ChargeCooldown"..lib.NumChargeCooldowns, parent, "CooldownFrameTemplate");
 			cooldown:SetScript("OnCooldownDone", EndChargeCooldown)
 			cooldown:SetHideCountdownNumbers(true)
-			cooldown:SetDrawEdge(true)
 			cooldown:SetDrawSwipe(false)
 		end
 		cooldown:SetParent(parent)
@@ -1208,7 +1207,7 @@ local function StartChargeCooldown(parent, chargeStart, chargeDuration)
 	end
 	-- set cooldown
 	parent.chargeCooldown:SetDrawBling(parent.chargeCooldown:GetEffectiveAlpha() > 0.5)
-	parent.chargeCooldown:SetCooldown(chargeStart, chargeDuration)
+	CooldownFrame_Set(parent.chargeCooldown, chargeStart, chargeDuration, true, true, chargeModRate)
 
 	-- update charge cooldown skin when masque is used
 	if Masque and Masque.UpdateCharge then
@@ -1227,8 +1226,8 @@ end
 
 function UpdateCooldown(self)
 	local locStart, locDuration = self:GetLossOfControlCooldown()
-	local start, duration, enable = self:GetCooldown()
-	local charges, maxCharges, chargeStart, chargeDuration = self:GetCharges()
+	local start, duration, enable, modRate = self:GetCooldown()
+	local charges, maxCharges, chargeStart, chargeDuration, chargeModRate = self:GetCharges()
 
 	self.cooldown:SetDrawBling(self.cooldown:GetEffectiveAlpha() > 0.5)
 
@@ -1239,7 +1238,7 @@ function UpdateCooldown(self)
 			self.cooldown:SetHideCountdownNumbers(true)
 			self.cooldown.currentCooldownType = COOLDOWN_TYPE_LOSS_OF_CONTROL
 		end
-		CooldownFrame_Set(self.cooldown, locStart, locDuration, true, true)
+		CooldownFrame_Set(self.cooldown, locStart, locDuration, true, true, modRate)
 	else
 		if self.cooldown.currentCooldownType ~= COOLDOWN_TYPE_NORMAL then
 			self.cooldown:SetEdgeTexture("Interface\\Cooldown\\edge")
@@ -1252,11 +1251,11 @@ function UpdateCooldown(self)
 		end
 
 		if charges and maxCharges and charges > 0 and charges < maxCharges then
-			StartChargeCooldown(self, chargeStart, chargeDuration)
+			StartChargeCooldown(self, chargeStart, chargeDuration, chargeModRate)
 		elseif self.chargeCooldown then
 			EndChargeCooldown(self.chargeCooldown)
 		end
-		CooldownFrame_Set(self.cooldown, start, duration, enable)
+		CooldownFrame_Set(self.cooldown, start, duration, enable, false, modRate)
 	end
 end
 
