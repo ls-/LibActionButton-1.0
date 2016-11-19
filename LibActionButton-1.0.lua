@@ -29,7 +29,7 @@ SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 
 ]]
 local MAJOR_VERSION = "LibActionButton-1.0"
-local MINOR_VERSION = 67
+local MINOR_VERSION = 68
 
 if not LibStub then error(MAJOR_VERSION .. " requires LibStub.") end
 local lib, oldversion = LibStub:NewLibrary(MAJOR_VERSION, MINOR_VERSION)
@@ -55,7 +55,7 @@ local str_match, format, tinsert, tremove = string.match, format, tinsert, tremo
 -- GLOBALS: GetItemIcon, GetItemCount, GetItemCooldown, IsEquippedItem, IsCurrentItem, IsUsableItem, IsConsumableItem, IsItemInRange
 -- GLOBALS: GetActionCharges, IsItemAction, GetSpellCharges
 -- GLOBALS: RANGE_INDICATOR, ATTACK_BUTTON_FLASH_TIME, TOOLTIP_UPDATE_TIME
--- GLOBALS: DraenorZoneAbilityFrame, HasDraenorZoneAbility, GetLastDraenorSpellTexture
+-- GLOBALS: ZoneAbilityFrame, HasZoneAbility, GetLastZoneAbilitySpellTexture
 
 local KeyBound = LibStub("LibKeyBound-1.0", true)
 local CBH = LibStub("CallbackHandler-1.0")
@@ -1057,17 +1057,17 @@ function Update(self)
 	-- Update icon and hotkey
 	local texture = self:GetTexture()
 
-	-- Draenor zone button handling
-	self.draenorZoneDisabled = false
+	-- Zone ability button handling
+	self.zoneAbilityDisabled = false
 	self.icon:SetDesaturated(false)
 	if self._state_type == "action" then
 		local action_type, id = GetActionInfo(self._state_action)
-		if ((action_type == "spell" or action_type == "companion") and DraenorZoneAbilityFrame and DraenorZoneAbilityFrame.baseName and not HasDraenorZoneAbility()) then
-			local name = GetSpellInfo(DraenorZoneAbilityFrame.baseName)
+		if ((action_type == "spell" or action_type == "companion") and ZoneAbilityFrame and ZoneAbilityFrame.baseName and not HasZoneAbility()) then
+			local name = GetSpellInfo(ZoneAbilityFrame.baseName)
 			local abilityName = GetSpellInfo(id)
 			if name == abilityName then
-				texture = GetLastDraenorSpellTexture()
-				self.draenorZoneDisabled = true
+				texture = GetLastZoneAbilitySpellTexture()
+				self.zoneAbilityDisabled = true
 				self.icon:SetDesaturated(true)
 			end
 		end
