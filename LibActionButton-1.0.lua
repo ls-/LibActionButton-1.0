@@ -35,8 +35,6 @@ if not LibStub then error(MAJOR_VERSION .. " requires LibStub.") end
 local lib, oldversion = LibStub:NewLibrary(MAJOR_VERSION, MINOR_VERSION)
 if not lib then return end
 
-local IsLegion = select(4, GetBuildInfo()) >= 70000
-
 -- Lua functions
 local _G = _G
 local type, error, tostring, tonumber, assert, select = type, error, tostring, tonumber, assert, select
@@ -1241,11 +1239,7 @@ function UpdateCooldown(self)
 			self.cooldown:SetHideCountdownNumbers(true)
 			self.cooldown.currentCooldownType = COOLDOWN_TYPE_LOSS_OF_CONTROL
 		end
-		if IsLegion then
-			CooldownFrame_Set(self.cooldown, locStart, locDuration, true, true)
-		else
-			CooldownFrame_SetTimer(self.cooldown, locStart, locDuration, 1, true)
-		end
+		CooldownFrame_Set(self.cooldown, locStart, locDuration, true, true)
 	else
 		if self.cooldown.currentCooldownType ~= COOLDOWN_TYPE_NORMAL then
 			self.cooldown:SetEdgeTexture("Interface\\Cooldown\\edge")
@@ -1262,11 +1256,7 @@ function UpdateCooldown(self)
 		elseif self.chargeCooldown then
 			EndChargeCooldown(self.chargeCooldown)
 		end
-		if IsLegion then
-			CooldownFrame_Set(self.cooldown, start, duration, enable)
-		else
-			CooldownFrame_SetTimer(self.cooldown, start, duration, enable)
-		end
+		CooldownFrame_Set(self.cooldown, start, duration, enable)
 	end
 end
 
