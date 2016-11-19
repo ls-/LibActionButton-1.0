@@ -29,7 +29,7 @@ SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 
 ]]
 local MAJOR_VERSION = "LibActionButton-1.0"
-local MINOR_VERSION = 66
+local MINOR_VERSION = 67
 
 if not LibStub then error(MAJOR_VERSION .. " requires LibStub.") end
 local lib, oldversion = LibStub:NewLibrary(MAJOR_VERSION, MINOR_VERSION)
@@ -112,7 +112,7 @@ local type_meta_map = {
 
 local ButtonRegistry, ActiveButtons, ActionButtons, NonActionButtons = lib.buttonRegistry, lib.activeButtons, lib.actionButtons, lib.nonActionButtons
 
-local Update, UpdateButtonState, UpdateUsable, UpdateCount, UpdateCooldown, UpdateTooltip, UpdateNewAction
+local Update, UpdateButtonState, UpdateUsable, UpdateCount, UpdateCooldown, UpdateTooltip, UpdateNewAction, ClearNewActionHighlight
 local StartFlash, StopFlash, UpdateFlash, UpdateHotkeys, UpdateRangeTimer, UpdateOverlayGlow
 local UpdateFlyout, ShowGrid, HideGrid, UpdateGrid, SetupSecureSnippets, WrapOnClick
 local ShowOverlayGlow, HideOverlayGlow
@@ -532,7 +532,7 @@ function Generic:OnEnter()
 	end
 
 	if self._state_type == "action" and self.NewActionTexture then
-		lib.ACTION_HIGHLIGHT_MARKS[self._state_action] = false
+		ClearNewActionHighlight(self._state_action, false, false)
 		UpdateNewAction(self)
 	end
 end
@@ -587,6 +587,10 @@ function Generic:PostClick()
 		PickupAny("clear", oldType, oldAction)
 	end
 	self._receiving_drag = nil
+
+	if self._state_type == "action" and lib.ACTION_HIGHLIGHT_MARKS[self._state_action] then
+		ClearNewActionHighlight(self._state_action, false, false)
+	end
 end
 
 -----------------------------------------------------------
@@ -706,6 +710,7 @@ function OnEvent(frame, event, arg1, ...)
 	elseif event == "ACTIONBAR_SLOT_CHANGED" then
 		for button in next, ButtonRegistry do
 			if button._state_type == "action" and (arg1 == 0 or arg1 == tonumber(button._state_action)) then
+				ClearNewActionHighlight(button._state_action, true, false)
 				Update(button)
 			end
 		end
@@ -1332,13 +1337,42 @@ function UpdateOverlayGlow(self)
 	end
 end
 
-hooksecurefunc("MarkNewActionHighlight", function(action, flag)
-	lib.ACTION_HIGHLIGHT_MARKS[action] = flag
+function ClearNewActionHighlight(action, preventIdenticalActionsFromClearing, value)
+	lib.ACTION_HIGHLIGHT_MARKS[action] = value
+
 	for button in next, ButtonRegistry do
 		if button._state_type == "action" and action == tonumber(button._state_action) then
 			UpdateNewAction(button)
 		end
 	end
+
+	if preventIdenticalActionsFromClearing then
+		return
+	end
+
+	-- iterate through actions and unmark all that are the same type
+	local unmarkedType, unmarkedID = GetActionInfo(action)
+	for actionKey, markValue in pairs(lib.ACTION_HIGHLIGHT_MARKS) do
+		if markValue then
+			local actionType, actionID = GetActionInfo(actionKey)
+			if actionType == unmarkedType and actionID == unmarkedID then
+				ClearNewActionHighlight(actionKey, true, value)
+			end
+		end
+	end
+end
+
+hooksecurefunc("MarkNewActionHighlight", function(action)
+	lib.ACTION_HIGHLIGHT_MARKS[action] = true
+	for button in next, ButtonRegistry do
+		if button._state_type == "action" and action == tonumber(button._state_action) then
+			UpdateNewAction(button)
+		end
+	end
+end)
+
+hooksecurefunc("ClearNewActionHighlight", function(action, preventIdenticalActionsFromClearing)
+	ClearNewActionHighlight(action, preventIdenticalActionsFromClearing, nil)
 end)
 
 function UpdateNewAction(self)
