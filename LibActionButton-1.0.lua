@@ -135,6 +135,7 @@ local DefaultConfig = {
 		range = { 0.8, 0.1, 0.1 },
 		mana = { 0.5, 0.5, 1.0 },
 		normal = { 1.0, 1.0, 1.0 },
+		equipped = { 0.0, 1.0, 0.0 },
 	},
 	hideElements = {
 		macro = false,
@@ -1059,7 +1060,8 @@ function Update(self)
 
 	-- Add a green border if button is an equipped item
 	if self:IsEquipped() and not self.config.hideElements.equipped then
-		self.Border:SetVertexColor(0, 1.0, 0, 0.35)
+		local color = self.config.colors.equipped
+		self.Border:SetVertexColor(color[1], color[2], color[3], 0.35)
 		self.Border:Show()
 	else
 		self.Border:Hide()
