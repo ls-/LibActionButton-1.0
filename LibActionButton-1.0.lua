@@ -29,7 +29,7 @@ SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 
 ]]
 local MAJOR_VERSION = "LibActionButton-1.0"
-local MINOR_VERSION = 73
+local MINOR_VERSION = 74
 
 if not LibStub then error(MAJOR_VERSION .. " requires LibStub.") end
 local lib, oldversion = LibStub:NewLibrary(MAJOR_VERSION, MINOR_VERSION)
@@ -625,7 +625,7 @@ function Generic:UpdateConfig(config)
 		error("LibActionButton-1.0: UpdateConfig requires a valid configuration!", 2)
 	end
 	local oldconfig = self.config
-	if not self.config then self.config = {} end
+	self.config = {}
 	-- merge the two configs
 	merge(self.config, config, DefaultConfig)
 
