@@ -624,18 +624,18 @@ function Generic:UpdateConfig(config)
 	if config and type(config) ~= "table" then
 		error("LibActionButton-1.0: UpdateConfig requires a valid configuration!", 2)
 	end
-	local oldconfig = self.config
+
 	if not self.config then self.config = {} end
 	-- merge the two configs
 	merge(self.config, config, DefaultConfig)
 
-	if self.config.outOfRangeColoring == "button" or (oldconfig and oldconfig.outOfRangeColoring == "button") then
+	if self.config.outOfRangeColoring == "button" then
+		self.HotKey:SetVertexColor(0.75, 0.75, 0.75)
 		UpdateUsable(self)
 	end
+
 	if self.config.outOfRangeColoring == "hotkey" then
 		self.outOfRange = nil
-	elseif oldconfig and oldconfig.outOfRangeColoring == "hotkey" then
-		self.HotKey:SetVertexColor(0.75, 0.75, 0.75)
 	end
 
 	if self.config.hideElements.macro then
