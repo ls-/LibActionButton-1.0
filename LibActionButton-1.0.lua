@@ -29,7 +29,7 @@ SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 
 ]]
 local MAJOR_VERSION = "LibActionButton-1.0"
-local MINOR_VERSION = 72
+local MINOR_VERSION = 73
 
 if not LibStub then error(MAJOR_VERSION .. " requires LibStub.") end
 local lib, oldversion = LibStub:NewLibrary(MAJOR_VERSION, MINOR_VERSION)
@@ -970,19 +970,19 @@ local function getKeys(binding, keys)
 		if keys ~= "" then
 			keys = keys .. ", "
 		end
-		keys = keys .. GetBindingText(hotKey, "KEY_")
+		keys = keys .. GetBindingText(hotKey)
 	end
 	return keys
 end
 
 function Generic:GetBindings()
-	local keys, binding
+	local keys
 
 	if self.config.keyBoundTarget then
 		keys = getKeys(self.config.keyBoundTarget)
 	end
 
-	keys = getKeys("CLICK "..self:GetName()..":LeftButton")
+	keys = getKeys("CLICK "..self:GetName()..":LeftButton", keys)
 
 	return keys
 end
