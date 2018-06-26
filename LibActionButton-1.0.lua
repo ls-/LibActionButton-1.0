@@ -133,7 +133,8 @@ local DefaultConfig = {
 	showGrid = false,
 	colors = {
 		range = { 0.8, 0.1, 0.1 },
-		mana = { 0.5, 0.5, 1.0 }
+		mana = { 0.5, 0.5, 1.0 },
+		normal = { 1.0, 1.0, 1.0 },
 	},
 	hideElements = {
 		macro = false,
@@ -188,7 +189,6 @@ function lib:CreateButton(id, name, header, config)
 
 	-- adjust hotkey style for better readability
 	button.HotKey:SetFont(button.HotKey:GetFont(), 13, "OUTLINE")
-	button.HotKey:SetVertexColor(0.75, 0.75, 0.75)
 
 	-- adjust count/stack size
 	button.Count:SetFont(button.Count:GetFont(), 16, "OUTLINE")
@@ -630,7 +630,7 @@ function Generic:UpdateConfig(config)
 	merge(self.config, config, DefaultConfig)
 
 	if self.config.outOfRangeColoring == "button" then
-		self.HotKey:SetVertexColor(0.75, 0.75, 0.75)
+		self.HotKey:SetVertexColor(unpack(self.config.colors.normal))
 		UpdateUsable(self)
 	end
 
@@ -895,7 +895,7 @@ function OnUpdate(_, elapsed)
 						if inRange == false then
 							hotkey:SetVertexColor(unpack(button.config.colors.range))
 						else
-							hotkey:SetVertexColor(0.75, 0.75, 0.75)
+							hotkey:SetVertexColor(unpack(button.config.colors.normal))
 						end
 					end
 				end
@@ -1077,7 +1077,7 @@ function Update(self)
 
 	-- Zone ability button handling
 	self.zoneAbilityDisabled = false
-	self.icon:SetDesaturated(false)
+	-- self.icon:SetDesaturated(false) -- set in UpdateUsable
 	if self._state_type == "action" then
 		local action_type, id = GetActionInfo(self._state_action)
 		if ((action_type == "spell" or action_type == "companion") and ZoneAbilityFrame and ZoneAbilityFrame.baseName and not HasZoneAbility()) then
@@ -1107,7 +1107,7 @@ function Update(self)
 		if self.HotKey:GetText() == RANGE_INDICATOR then
 			self.HotKey:Hide()
 		else
-			self.HotKey:SetVertexColor(0.75, 0.75, 0.75)
+			self.HotKey:SetVertexColor(unpack(self.config.colors.normal))
 		end
 		if not self.LBFSkinned and not self.MasqueSkinned then
 			self.NormalTexture:SetTexCoord(-0.15, 1.15, -0.15, 1.17)
@@ -1159,18 +1159,26 @@ function UpdateUsable(self)
 	-- TODO: make the colors configurable
 	-- TODO: allow disabling of the whole recoloring
 	if self.config.outOfRangeColoring == "button" and self.outOfRange then
-		self.icon:SetVertexColor(unpack(self.config.colors.range))
+		local color = self.config.colors.range
+		self.icon:SetDesaturated(true)
+		self.icon:SetVertexColor(color[1], color[2], color[3], 0.65)
 	else
 		local isUsable, notEnoughMana = self:IsUsable()
 		if isUsable then
-			self.icon:SetVertexColor(1.0, 1.0, 1.0)
-			--self.NormalTexture:SetVertexColor(1.0, 1.0, 1.0)
+			local color = self.config.colors.normal
+			self.icon:SetDesaturated(false)
+			self.icon:SetVertexColor(color[1], color[2], color[3], 1)
+			--self.NormalTexture:SetVertexColor(color[1], color[2], color[3])
 		elseif notEnoughMana then
-			self.icon:SetVertexColor(unpack(self.config.colors.mana))
-			--self.NormalTexture:SetVertexColor(0.5, 0.5, 1.0)
+			local color = self.config.colors.mana
+			self.icon:SetDesaturated(true)
+			self.icon:SetVertexColor(color[1], color[2], color[3], 0.65)
+			--self.NormalTexture:SetVertexColor(color[1], color[2], color[3])
 		else
-			self.icon:SetVertexColor(0.4, 0.4, 0.4)
-			--self.NormalTexture:SetVertexColor(1.0, 1.0, 1.0)
+			local color = self.config.colors.normal
+			self.icon:SetDesaturated(true)
+			self.icon:SetVertexColor(color[1], color[2], color[3], 0.65)
+			--self.NormalTexture:SetVertexColor(color[1], color[2], color[3])
 		end
 	end
 	lib.callbacks:Fire("OnButtonUsable", self)
