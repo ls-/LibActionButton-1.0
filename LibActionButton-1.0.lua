@@ -59,7 +59,7 @@ local str_match, format, tinsert, tremove = string.match, format, tinsert, tremo
 -- GLOBALS: RANGE_INDICATOR, ATTACK_BUTTON_FLASH_TIME, TOOLTIP_UPDATE_TIME
 -- GLOBALS: ZoneAbilityFrame, HasZoneAbility, GetLastZoneAbilitySpellTexture
 
-local KeyBound = LibStub("LibKeyBound-1.0", true)
+local KeyBound = LibStub("LibKeyBound-1.0-ls", true)
 local CBH = LibStub("CallbackHandler-1.0")
 local LBG = LibStub("LibButtonGlow-1.0", true)
 local Masque = LibStub("Masque", true)
@@ -163,7 +163,7 @@ function lib:CreateButton(id, name, header, config)
 	end
 
 	if not KeyBound then
-		KeyBound = LibStub("LibKeyBound-1.0", true)
+		KeyBound = LibStub("LibKeyBound-1.0-ls", true)
 	end
 
 	local button = setmetatable(CreateFrame("CheckButton", name, header, "SecureActionButtonTemplate, ActionButtonTemplate"), Generic_MT)
