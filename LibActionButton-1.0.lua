@@ -130,6 +130,7 @@ end
 local DefaultConfig = {
 	outOfRangeColoring = "button",
 	outOfManaColoring = "hotkey",
+	desaturateOnCooldown = false,
 	tooltip = "enabled",
 	showGrid = false,
 	colors = {
@@ -1186,6 +1187,10 @@ function UpdateUsable(self)
 		local color = self.config.colors.mana
 		self.icon:SetDesaturated(true)
 		self.icon:SetVertexColor(color[1], color[2], color[3], 0.65)
+	elseif self.config.desaturateOnCooldown and self.onCooldown then
+		local color = self.config.colors.normal
+		self.icon:SetDesaturated(true)
+		self.icon:SetVertexColor(color[1], color[2], color[3], 0.65)
 	else
 		local isUsable = self:IsUsable()
 		if isUsable then
@@ -1300,7 +1305,17 @@ function UpdateCooldown(self)
 		elseif self.chargeCooldown then
 			EndChargeCooldown(self.chargeCooldown)
 		end
+
 		CooldownFrame_Set(self.cooldown, start, duration, enable, false, modRate)
+	end
+
+	local oldOnCooldown = self.onCooldown
+	self.onCooldown = enable and enable ~= 0 and start > 0 and duration > 1.5
+	if self.config.desaturateOnCooldown and self.onCooldown ~= oldOnCooldown then
+		UpdateUsable(self)
+		if self.onCooldown then
+			self.cooldown:SetScript("OnCooldownDone", OnCooldownDone)
+		end
 	end
 end
 
