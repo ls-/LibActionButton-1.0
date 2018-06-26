@@ -128,8 +128,8 @@ local function GameTooltip_GetOwnerForbidden()
 end
 
 local DefaultConfig = {
-	outOfRangeColoring = "button",
-	outOfManaColoring = "hotkey",
+	outOfRangeColoring = "hotkey",
+	outOfManaColoring = "button",
 	drawBling = true,
 	desaturateOnCooldown = false,
 	tooltip = "enabled",
