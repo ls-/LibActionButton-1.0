@@ -129,6 +129,7 @@ end
 
 local DefaultConfig = {
 	outOfRangeColoring = "button",
+	outOfManaColoring = "hotkey",
 	tooltip = "enabled",
 	showGrid = false,
 	colors = {
@@ -630,13 +631,17 @@ function Generic:UpdateConfig(config)
 	-- merge the two configs
 	merge(self.config, config, DefaultConfig)
 
-	if self.config.outOfRangeColoring == "button" then
+	if self.config.outOfRangeColoring == "button" and self.config.outOfManaColoring == "button" then
 		self.HotKey:SetVertexColor(unpack(self.config.colors.normal))
 		UpdateUsable(self)
 	end
 
 	if self.config.outOfRangeColoring == "hotkey" then
 		self.outOfRange = nil
+	end
+
+	if self.config.outOfManaColoring == "hotkey" then
+		self.outOfMana = nil
 	end
 
 	if self.config.hideElements.macro then
@@ -881,21 +886,34 @@ function OnUpdate(_, elapsed)
 				local inRange = button:IsInRange()
 				local oldRange = button.outOfRange
 				button.outOfRange = (inRange == false)
-				if oldRange ~= button.outOfRange then
-					if button.config.outOfRangeColoring == "button" then
+
+				local _, notEnoughMana = button:IsUsable()
+				local oldMana = button.outOfMana
+				button.outOfMana = (notEnoughMana == true)
+
+				if oldRange ~= button.outOfRange or oldMana ~= button.outOfMana then
+					if button.config.outOfRangeColoring == "button" or button.config.outOfManaColoring == "button" then
 						UpdateUsable(button)
-					elseif button.config.outOfRangeColoring == "hotkey" then
-						local hotkey = button.HotKey
-						if hotkey:GetText() == RANGE_INDICATOR then
-							if inRange == false then
+					end
+
+					if button.config.outOfRangeColoring == "hotkey" or button.config.outOfManaColoring == "hotkey" then
+						if inRange == false and button.config.outOfRangeColoring == "hotkey" then
+							local hotkey = button.HotKey
+							if hotkey:GetText() == RANGE_INDICATOR then
 								hotkey:Show()
-							else
+							end
+							hotkey:SetVertexColor(unpack(button.config.colors.range))
+						elseif notEnoughMana and button.config.outOfManaColoring == "hotkey" then
+							local hotkey = button.HotKey
+							if hotkey:GetText() == RANGE_INDICATOR then
+								hotkey:Show()
+							end
+							hotkey:SetVertexColor(unpack(button.config.colors.mana))
+						else
+							local hotkey = button.HotKey
+							if hotkey:GetText() == RANGE_INDICATOR then
 								hotkey:Hide()
 							end
-						end
-						if inRange == false then
-							hotkey:SetVertexColor(unpack(button.config.colors.range))
-						else
 							hotkey:SetVertexColor(unpack(button.config.colors.normal))
 						end
 					end
@@ -1164,17 +1182,16 @@ function UpdateUsable(self)
 		local color = self.config.colors.range
 		self.icon:SetDesaturated(true)
 		self.icon:SetVertexColor(color[1], color[2], color[3], 0.65)
+	elseif self.config.outOfManaColoring == "button" and self.outOfMana then
+		local color = self.config.colors.mana
+		self.icon:SetDesaturated(true)
+		self.icon:SetVertexColor(color[1], color[2], color[3], 0.65)
 	else
-		local isUsable, notEnoughMana = self:IsUsable()
+		local isUsable = self:IsUsable()
 		if isUsable then
 			local color = self.config.colors.normal
 			self.icon:SetDesaturated(false)
 			self.icon:SetVertexColor(color[1], color[2], color[3], 1)
-			--self.NormalTexture:SetVertexColor(color[1], color[2], color[3])
-		elseif notEnoughMana then
-			local color = self.config.colors.mana
-			self.icon:SetDesaturated(true)
-			self.icon:SetVertexColor(color[1], color[2], color[3], 0.65)
 			--self.NormalTexture:SetVertexColor(color[1], color[2], color[3])
 		else
 			local color = self.config.colors.normal
