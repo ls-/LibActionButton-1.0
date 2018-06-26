@@ -658,7 +658,6 @@ function Generic:UpdateConfig(config)
 
 	if self.config.outOfRangeColoring == "button" and self.config.outOfManaColoring == "button" then
 		self.HotKey:SetVertexColor(unpack(self.config.colors.normal))
-		UpdateUsable(self)
 	end
 
 	if self.config.outOfRangeColoring == "hotkey" then
