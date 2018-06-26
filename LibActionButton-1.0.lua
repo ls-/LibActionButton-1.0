@@ -660,13 +660,8 @@ function Generic:UpdateConfig(config)
 		self.HotKey:SetVertexColor(unpack(self.config.colors.normal))
 	end
 
-	if self.config.outOfRangeColoring == "hotkey" then
-		self.outOfRange = nil
-	end
-
-	if self.config.outOfManaColoring == "hotkey" then
-		self.outOfMana = nil
-	end
+	self.outOfRange = nil
+	self.outOfMana = nil
 
 	if self.config.hideElements.macro then
 		self.Name:Hide()
