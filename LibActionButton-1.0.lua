@@ -189,10 +189,10 @@ function lib:CreateButton(id, name, header, config)
 	WrapOnClick(button)
 
 	-- adjust hotkey style for better readability
-	button.HotKey:SetFont(button.HotKey:GetFont(), 13, "OUTLINE")
+	-- button.HotKey:SetFont(button.HotKey:GetFont(), 13, "OUTLINE")
 
 	-- adjust count/stack size
-	button.Count:SetFont(button.Count:GetFont(), 16, "OUTLINE")
+	-- button.Count:SetFont(button.Count:GetFont(), 16, "OUTLINE")
 
 	-- Store the button in the registry, needed for event and OnUpdate handling
 	if not next(ButtonRegistry) then
