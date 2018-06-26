@@ -1325,11 +1325,11 @@ function UpdateHotkeys(self)
 	local key = self:GetHotkey()
 	if not key or key == "" or self.config.hideElements.hotkey then
 		self.HotKey:SetText(RANGE_INDICATOR)
-		self.HotKey:SetPoint("TOPLEFT", self, "TOPLEFT", 1, - 2)
+		self.HotKey:SetPoint("LEFT", self, "LEFT", 1, 0)
 		self.HotKey:Hide()
 	else
 		self.HotKey:SetText(key)
-		self.HotKey:SetPoint("TOPLEFT", self, "TOPLEFT", - 2, - 2)
+		self.HotKey:SetPoint("LEFT", self, "LEFT", - 2, 0)
 		self.HotKey:Show()
 	end
 end
