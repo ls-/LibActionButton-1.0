@@ -132,6 +132,7 @@ local DefaultConfig = {
 	outOfManaColoring = "button",
 	drawBling = true,
 	desaturateOnCooldown = false,
+	desaturateWhenUnusable = false,
 	tooltip = "enabled",
 	showGrid = false,
 	colors = {
@@ -139,6 +140,7 @@ local DefaultConfig = {
 		mana = { 0.5, 0.5, 1.0 },
 		normal = { 1.0, 1.0, 1.0 },
 		equipped = { 0.0, 1.0, 0.0 },
+		unusable = { 0.4, 0.4, 0.4 },
 	},
 	hideElements = {
 		macro = false,
@@ -1232,8 +1234,8 @@ function UpdateUsable(self)
 			self.icon:SetVertexColor(color[1], color[2], color[3], 1)
 			--self.NormalTexture:SetVertexColor(color[1], color[2], color[3])
 		else
-			local color = self.config.colors.normal
-			self.icon:SetDesaturated(true)
+			local color = self.config.colors.unusable
+			self.icon:SetDesaturated(self.config.desaturateWhenUnusable == true)
 			self.icon:SetVertexColor(color[1], color[2], color[3], 0.65)
 			--self.NormalTexture:SetVertexColor(color[1], color[2], color[3])
 		end
