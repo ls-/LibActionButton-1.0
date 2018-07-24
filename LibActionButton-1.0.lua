@@ -1114,8 +1114,7 @@ function Update(self)
 
 	-- Add a green border if button is an equipped item
 	if self:IsEquipped() and not self.config.hideElements.equipped then
-		local color = self.config.colors.equipped
-		self.Border:SetVertexColor(color[1], color[2], color[3], 0.35)
+		self.Border:SetVertexColor(unpack(self.config.colors.equipped))
 		self.Border:Show()
 	else
 		self.Border:Hide()
@@ -1212,32 +1211,23 @@ function UpdateButtonState(self)
 end
 
 function UpdateUsable(self)
-	-- TODO: make the colors configurable
-	-- TODO: allow disabling of the whole recoloring
 	if self.config.outOfRangeColoring == "button" and self.outOfRange then
-		local color = self.config.colors.range
 		self.icon:SetDesaturated(true)
-		self.icon:SetVertexColor(color[1], color[2], color[3], 0.65)
+		self.icon:SetVertexColor(unpack(self.config.colors.range))
 	elseif self.config.outOfManaColoring == "button" and self.outOfMana then
-		local color = self.config.colors.mana
 		self.icon:SetDesaturated(true)
-		self.icon:SetVertexColor(color[1], color[2], color[3], 0.65)
+		self.icon:SetVertexColor(unpack(self.config.colors.mana))
 	elseif self.config.desaturateOnCooldown and self.onCooldown then
-		local color = self.config.colors.normal
 		self.icon:SetDesaturated(true)
-		self.icon:SetVertexColor(color[1], color[2], color[3], 0.65)
+		self.icon:SetVertexColor(unpack(self.config.colors.unusable))
 	else
 		local isUsable = self:IsUsable()
 		if isUsable then
-			local color = self.config.colors.normal
 			self.icon:SetDesaturated(false)
-			self.icon:SetVertexColor(color[1], color[2], color[3], 1)
-			--self.NormalTexture:SetVertexColor(color[1], color[2], color[3])
+			self.icon:SetVertexColor(unpack(self.config.colors.normal))
 		else
-			local color = self.config.colors.unusable
 			self.icon:SetDesaturated(self.config.desaturateWhenUnusable == true)
-			self.icon:SetVertexColor(color[1], color[2], color[3], 0.65)
-			--self.NormalTexture:SetVertexColor(color[1], color[2], color[3])
+			self.icon:SetVertexColor(unpack(self.config.colors.unusable))
 		end
 	end
 	lib.callbacks:Fire("OnButtonUsable", self)
