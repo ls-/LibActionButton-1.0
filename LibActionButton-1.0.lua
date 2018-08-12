@@ -585,7 +585,7 @@ end
 -- to place it on the button. Like action buttons work.
 function Generic:PreClick()
 	if self._state_type == "action" or self._state_type == "pet"
-	   or InCombatLockdown() or self:GetAttribute("LABdisableDragNDrop")
+		or InCombatLockdown() or self:GetAttribute("LABdisableDragNDrop")
 	then
 		return
 	end
