@@ -540,21 +540,15 @@ local function PickupAny(kind, target, detail, ...)
 	end
 end
 
-function Generic:OnUpdate(elapsed)
-	self.elapsed = (self.elapsed or 0) + elapsed
-
-	if self.elapsed > 0.1 then
-		if self:GetAttribute("buttonlock") then
-			if IsModifiedClick("PICKUPACTION") and (self.clickState == "AnyDown" or self.clickState == nil) then
-				self.clickState = "AnyUp"
-				self:RegisterForClicks(self.clickState)
-			elseif not IsModifiedClick("PICKUPACTION") and self.clickState == "AnyUp" then
-				self.clickState = "AnyDown"
-				self:RegisterForClicks(self.clickState)
-			end
+function Generic:OnUpdate()
+	if self:GetAttribute("buttonlock") then
+		if IsModifiedClick("PICKUPACTION") and (not self.clickState or self.clickState == "AnyDown") then
+			self.clickState = "AnyUp"
+			self:RegisterForClicks(self.clickState)
+		elseif not IsModifiedClick("PICKUPACTION") and self.clickState == "AnyUp" then
+			self.clickState = "AnyDown"
+			self:RegisterForClicks(self.clickState)
 		end
-
-		self.elapsed = 0
 	end
 end
 
@@ -572,14 +566,19 @@ function Generic:OnEnter()
 	end
 
 	if self.config.clickOnDown then
-		self:SetScript('OnUpdate', Generic.OnUpdate)
+		self:SetScript("OnUpdate", Generic.OnUpdate)
 	end
 end
 
 function Generic:OnLeave()
 	if GameTooltip:IsForbidden() then return end
 	GameTooltip:Hide()
-	self:SetScript('OnUpdate', nil)
+
+	if self.config.clickOnDown then
+		self:SetScript("OnUpdate", nil)
+		self.clickState = "AnyDown"
+		self:RegisterForClicks(self.clickState)
+	end
 end
 
 -- Insecure drag handler to allow clicking on the button with an action on the cursor
