@@ -130,7 +130,6 @@ end
 local DefaultConfig = {
 	outOfRangeColoring = "hotkey",
 	outOfManaColoring = "button",
-	drawBling = true,
 	tooltip = "enabled",
 	showGrid = false,
 	colors = {
@@ -1284,7 +1283,7 @@ local function StartChargeCooldown(parent, chargeStart, chargeDuration, chargeMo
 		cooldown.parent = parent
 	end
 	-- set cooldown
-	parent.chargeCooldown:SetDrawBling(parent.config.drawBling and parent.chargeCooldown:GetEffectiveAlpha() > 0.5)
+	-- parent.chargeCooldown:SetDrawBling(parent.chargeCooldown:GetEffectiveAlpha() > 0.5)
 	CooldownFrame_Set(parent.chargeCooldown, chargeStart, chargeDuration, true, true, chargeModRate)
 
 	-- update charge cooldown skin when masque is used
@@ -1307,7 +1306,7 @@ function UpdateCooldown(self)
 	local start, duration, enable, modRate = self:GetCooldown()
 	local charges, maxCharges, chargeStart, chargeDuration, chargeModRate = self:GetCharges()
 
-	self.cooldown:SetDrawBling(self.config.drawBling and self.cooldown:GetEffectiveAlpha() > 0.5)
+	-- self.cooldown:SetDrawBling(self.cooldown:GetEffectiveAlpha() > 0.5)
 
 	if (locStart + locDuration) > (start + duration) then
 		if self.cooldown.currentCooldownType ~= COOLDOWN_TYPE_LOSS_OF_CONTROL then
