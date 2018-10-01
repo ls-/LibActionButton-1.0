@@ -1213,15 +1213,15 @@ function UpdateButtonState(self)
 end
 
 function UpdateUsable(self)
-	if self.config.outOfRangeColoring == "button" and self.outOfRange then
+	if self.onCooldown then
+		self.icon:SetDesaturated(self.config.desaturation.cooldown == true)
+		self.icon:SetVertexColor(unpack(self.config.colors.unusable))
+	elseif self.config.outOfRangeColoring == "button" and self.outOfRange then
 		self.icon:SetDesaturated(self.config.desaturation.range == true)
 		self.icon:SetVertexColor(unpack(self.config.colors.range))
 	elseif self.config.outOfManaColoring == "button" and self.outOfMana then
 		self.icon:SetDesaturated(self.config.desaturation.mana == true)
 		self.icon:SetVertexColor(unpack(self.config.colors.mana))
-	elseif self.onCooldown then
-		self.icon:SetDesaturated(self.config.desaturation.cooldown == true)
-		self.icon:SetVertexColor(unpack(self.config.colors.unusable))
 	else
 		local isUsable = self:IsUsable()
 		if isUsable then
