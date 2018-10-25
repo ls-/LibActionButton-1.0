@@ -140,7 +140,6 @@ local DefaultConfig = {
 		unusable = { 0.4, 0.4, 0.4 },
 	},
 	desaturation = {
-		cooldown = false,
 		mana = false,
 		range = false,
 		unusable = false,
@@ -1213,10 +1212,7 @@ function UpdateButtonState(self)
 end
 
 function UpdateUsable(self)
-	if self.onCooldown then
-		self.icon:SetDesaturated(self.config.desaturation.cooldown == true)
-		self.icon:SetVertexColor(unpack(self.config.colors.unusable))
-	elseif self.config.outOfRangeColoring == "button" and self.outOfRange then
+	if self.config.outOfRangeColoring == "button" and self.outOfRange then
 		self.icon:SetDesaturated(self.config.desaturation.range == true)
 		self.icon:SetVertexColor(unpack(self.config.colors.range))
 	elseif self.config.outOfManaColoring == "button" and self.outOfMana then
@@ -1334,15 +1330,6 @@ function UpdateCooldown(self)
 		end
 
 		CooldownFrame_Set(self.cooldown, start, duration, enable, false, modRate)
-	end
-
-	local oldOnCooldown = self.onCooldown
-	self.onCooldown = enable and enable ~= 0 and start > 0 and duration > 1.5
-	if self.onCooldown ~= oldOnCooldown then
-		UpdateUsable(self)
-		if self.onCooldown then
-			self.cooldown:SetScript("OnCooldownDone", OnCooldownDone)
-		end
 	end
 end
 
