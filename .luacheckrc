@@ -37,6 +37,7 @@ read_globals = {
 	"GetActionTexture",
 	"GetBindingKey",
 	"GetBindingText",
+	"GetBuildInfo",
 	"GetCursorInfo",
 	"GetCVar",
 	"GetItemIcon",
