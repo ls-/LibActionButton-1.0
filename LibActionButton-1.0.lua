@@ -58,7 +58,7 @@ local str_match, format, tinsert, tremove = string.match, format, tinsert, tremo
 
 local WoWClassic = select(4, GetBuildInfo()) < 20000
 
-local KeyBound = LibStub("LibKeyBound-1.0-ls", true)
+local KeyBound = LibStub("LibKeyBound-1.0", true)
 local CBH = LibStub("CallbackHandler-1.0")
 local LBG = LibStub("LibButtonGlow-1.0", true)
 local Masque = LibStub("Masque", true)
@@ -166,7 +166,7 @@ function lib:CreateButton(id, name, header, config)
 	end
 
 	if not KeyBound then
-		KeyBound = LibStub("LibKeyBound-1.0-ls", true)
+		KeyBound = LibStub("LibKeyBound-1.0", true)
 	end
 
 	local button = setmetatable(CreateFrame("CheckButton", name, header, "SecureActionButtonTemplate, ActionButtonTemplate"), Generic_MT)
