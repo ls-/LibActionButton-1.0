@@ -23,6 +23,9 @@ read_globals = {
 	-- Third Party AddOns/Libraries
 	"LibStub",
 
+	-- API categories
+	"C_LevelLink",
+
 	-- API functions
 	"ClearCursor",
 	"CreateFrame",

@@ -1059,6 +1059,10 @@ function Update(self)
 		if self.chargeCooldown then
 			EndChargeCooldown(self.chargeCooldown)
 		end
+
+		if self.LevelLinkLockIcon then
+			self.LevelLinkLockIcon:SetShown(false)
+		end
 	end
 
 	-- Add a green border if button is an equipped item
@@ -1165,6 +1169,18 @@ function UpdateUsable(self)
 			--self.NormalTexture:SetVertexColor(1.0, 1.0, 1.0)
 		end
 	end
+
+	if not WoWClassic and self._state_type == "action" then
+		local isLevelLinkLocked = C_LevelLink.IsActionLocked(self._state_action)
+		if not self.icon:IsDesaturated() then
+			self.icon:SetDesaturated(isLevelLinkLocked)
+		end
+
+		if self.LevelLinkLockIcon then
+			self.LevelLinkLockIcon:SetShown(isLevelLinkLocked)
+		end
+	end
+
 	lib.callbacks:Fire("OnButtonUsable", self)
 end
 
