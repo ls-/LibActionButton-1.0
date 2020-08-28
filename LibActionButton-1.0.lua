@@ -188,6 +188,7 @@ function lib:CreateButton(id, name, header, config)
 	-- adjust hotkey style for better readability
 	button.HotKey:SetFont(button.HotKey:GetFont(), 13, "OUTLINE")
 	button.HotKey:SetVertexColor(0.75, 0.75, 0.75)
+	button.HotKey:SetPoint("TOPLEFT", button, "TOPLEFT", -2, -4)
 
 	-- adjust count/stack size
 	button.Count:SetFont(button.Count:GetFont(), 16, "OUTLINE")
@@ -1323,11 +1324,9 @@ function UpdateHotkeys(self)
 	local key = self:GetHotkey()
 	if not key or key == "" or self.config.hideElements.hotkey then
 		self.HotKey:SetText(RANGE_INDICATOR)
-		self.HotKey:SetPoint("TOPLEFT", self, "TOPLEFT", 1, - 2)
 		self.HotKey:Hide()
 	else
 		self.HotKey:SetText(key)
-		self.HotKey:SetPoint("TOPLEFT", self, "TOPLEFT", - 2, - 2)
 		self.HotKey:Show()
 	end
 end
