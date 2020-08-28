@@ -1082,18 +1082,6 @@ function Update(self)
 	-- Zone ability button handling
 	self.zoneAbilityDisabled = false
 	self.icon:SetDesaturated(false)
-	if self._state_type == "action" then
-		local action_type, id = GetActionInfo(self._state_action)
-		if ((action_type == "spell" or action_type == "companion") and ZoneAbilityFrame and ZoneAbilityFrame.baseName and not HasZoneAbility()) then
-			local name = GetSpellInfo(ZoneAbilityFrame.baseName)
-			local abilityName = GetSpellInfo(id)
-			if name == abilityName then
-				texture = GetLastZoneAbilitySpellTexture()
-				self.zoneAbilityDisabled = true
-				self.icon:SetDesaturated(true)
-			end
-		end
-	end
 
 	if texture then
 		self.icon:SetTexture(texture)

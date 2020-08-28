@@ -96,7 +96,6 @@ read_globals = {
 	"GameTooltip",
 	"SpellFlyout",
 	"UIParent",
-	"ZoneAbilityFrame",
 
 	-- FrameXML Constants
 	"ACTION_HIGHLIGHT_MARKS",
