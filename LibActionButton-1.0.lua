@@ -29,7 +29,7 @@ SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 
 ]]
 local MAJOR_VERSION = "LibActionButton-1.0"
-local MINOR_VERSION = 78
+local MINOR_VERSION = 79
 
 if not LibStub then error(MAJOR_VERSION .. " requires LibStub.") end
 local lib, oldversion = LibStub:NewLibrary(MAJOR_VERSION, MINOR_VERSION)
@@ -95,7 +95,7 @@ local type_meta_map = {
 
 local ButtonRegistry, ActiveButtons, ActionButtons, NonActionButtons = lib.buttonRegistry, lib.activeButtons, lib.actionButtons, lib.nonActionButtons
 
-local Update, UpdateButtonState, UpdateUsable, UpdateCount, UpdateCooldown, UpdateTooltip, UpdateNewAction, ClearNewActionHighlight
+local Update, UpdateButtonState, UpdateUsable, UpdateCount, UpdateCooldown, UpdateTooltip, UpdateNewAction, UpdateSpellHighlight, ClearNewActionHighlight
 local StartFlash, StopFlash, UpdateFlash, UpdateHotkeys, UpdateRangeTimer, UpdateOverlayGlow
 local UpdateFlyout, ShowGrid, HideGrid, UpdateGrid, SetupSecureSnippets, WrapOnClick
 local ShowOverlayGlow, HideOverlayGlow
@@ -1105,6 +1105,8 @@ function Update(self)
 
 	UpdateNewAction(self)
 
+	UpdateSpellHighlight(self)
+
 	if GameTooltip_GetOwnerForbidden() == self then
 		UpdateTooltip(self)
 	end
@@ -1382,6 +1384,54 @@ function UpdateNewAction(self)
 		else
 			self.NewActionTexture:Hide()
 		end
+	end
+end
+
+hooksecurefunc("UpdateOnBarHighlightMarksBySpell", function(spellID)
+	lib.ON_BAR_HIGHLIGHT_MARK_TYPE = "spell"
+	lib.ON_BAR_HIGHLIGHT_MARK_ID = tonumber(spellID)
+
+	for button in next, ButtonRegistry do
+		UpdateSpellHighlight(button)
+	end
+end)
+
+hooksecurefunc("UpdateOnBarHighlightMarksByFlyout", function(flyoutID)
+	lib.ON_BAR_HIGHLIGHT_MARK_TYPE = "flyout"
+	lib.ON_BAR_HIGHLIGHT_MARK_ID = tonumber(flyoutID)
+
+	for button in next, ButtonRegistry do
+		UpdateSpellHighlight(button)
+	end
+end)
+
+hooksecurefunc("ClearOnBarHighlightMarks", function()
+	lib.ON_BAR_HIGHLIGHT_MARK_TYPE = nil
+
+	for button in next, ButtonRegistry do
+		UpdateSpellHighlight(button)
+	end
+end)
+
+function UpdateSpellHighlight(self)
+	local shown = false
+
+	local highlightType, id = lib.ON_BAR_HIGHLIGHT_MARK_TYPE, lib.ON_BAR_HIGHLIGHT_MARK_ID
+	if highlightType == "spell" and self:GetSpellId() == id then
+		shown = true
+	elseif highlightType == "flyout" and self._state_type == "action" then
+		local actionType, actionId = GetActionInfo(self._state_action)
+		if actionType == "flyout" and actionId == id then
+			shown = true
+		end
+	end
+
+	if shown then
+		self.SpellHighlightTexture:Show()
+		self.SpellHighlightAnim:Play()
+	else
+		self.SpellHighlightTexture:Hide()
+		self.SpellHighlightAnim:Stop()
 	end
 end
 
