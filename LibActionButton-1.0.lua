@@ -179,9 +179,9 @@ function lib:CreateButton(id, name, header, config)
 	WrapOnClick(button)
 
 	-- adjust hotkey style for better readability
-	button.HotKey:SetFont(button.HotKey:GetFont(), 13, "OUTLINE")
-	button.HotKey:SetVertexColor(0.75, 0.75, 0.75)
-	button.HotKey:SetPoint("TOPLEFT", button, "TOPLEFT", -2, -4)
+	-- button.HotKey:SetFont(button.HotKey:GetFont(), 13, "OUTLINE")
+	-- button.HotKey:SetVertexColor(0.75, 0.75, 0.75)
+	-- button.HotKey:SetPoint("TOPLEFT", button, "TOPLEFT", -2, -4)
 
 	-- adjust count/stack size
 	-- button.Count:SetFont(button.Count:GetFont(), 16, "OUTLINE")
@@ -1128,18 +1128,6 @@ function Update(self)
 	-- Zone ability button handling
 	self.zoneAbilityDisabled = false
 	-- self.icon:SetDesaturated(false) -- set in UpdateUsable
-	if self._state_type == "action" then
-		local action_type, id = GetActionInfo(self._state_action)
-		if ((action_type == "spell" or action_type == "companion") and ZoneAbilityFrame and ZoneAbilityFrame.baseName and not HasZoneAbility()) then
-			local name = GetSpellInfo(ZoneAbilityFrame.baseName)
-			local abilityName = GetSpellInfo(id)
-			if name == abilityName then
-				texture = GetLastZoneAbilitySpellTexture()
-				self.zoneAbilityDisabled = true
-				self.icon:SetDesaturated(true)
-			end
-		end
-	end
 
 	if texture then
 		self.icon:SetTexture(texture)
