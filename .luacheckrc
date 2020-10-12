@@ -23,6 +23,9 @@ read_globals = {
 	-- Third Party AddOns/Libraries
 	"LibStub",
 
+	-- API categories
+	"C_LevelLink",
+
 	-- API functions
 	"ClearCursor",
 	"CreateFrame",
@@ -51,6 +54,7 @@ read_globals = {
 	"GetSpellCooldown",
 	"GetSpellCount",
 	"GetSpellInfo",
+	"GetSpellLossOfControlCooldown",
 	"GetSpellTexture",
 	"HasAction",
 	"HasZoneAbility",
@@ -96,7 +100,6 @@ read_globals = {
 	"GameTooltip",
 	"SpellFlyout",
 	"UIParent",
-	"ZoneAbilityFrame",
 
 	-- FrameXML Constants
 	"ACTION_HIGHLIGHT_MARKS",

@@ -1,5 +1,5 @@
 --[[
-Copyright (c) 2010-2019, Hendrik "nevcairiel" Leppkes <h.leppkes@gmail.com>
+Copyright (c) 2010-2020, Hendrik "nevcairiel" Leppkes <h.leppkes@gmail.com>
 
 All rights reserved.
 
@@ -39,22 +39,6 @@ if not lib then return end
 local type, error, tostring, tonumber, assert, select = type, error, tostring, tonumber, assert, select
 local setmetatable, wipe, unpack, pairs, next = setmetatable, wipe, unpack, pairs, next
 local str_match, format, tinsert, tremove = string.match, format, tinsert, tremove
-
--- Global vars/functions that we don't upvalue since they might get hooked, or upgraded
--- List them here for Mikk's FindGlobals script
--- Note: No WoW API function get upvalued to allow proper interaction with any addons that try to hook them.
--- GLOBALS: LibStub, CreateFrame, InCombatLockdown, ClearCursor, GetCursorInfo, GameTooltip, GameTooltip_SetDefaultAnchor
--- GLOBALS: GetBindingKey, GetBindingText, SetBinding, SetBindingClick, GetCVar, GetMacroInfo
--- GLOBALS: PickupAction, PickupItem, PickupMacro, PickupPetAction, PickupSpell, PickupCompanion, PickupEquipmentSet
--- GLOBALS: CooldownFrame_SetTimer, UIParent, IsSpellOverlayed, SpellFlyout, GetMouseFocus, SetClampedTextureRotation
--- GLOBALS: GetActionInfo, GetActionTexture, HasAction, GetActionText, GetActionCount, GetActionCooldown, IsAttackAction
--- GLOBALS: IsAutoRepeatAction, IsEquippedAction, IsCurrentAction, IsConsumableAction, IsUsableAction, IsStackableAction, IsActionInRange
--- GLOBALS: GetSpellLink, GetMacroSpell, GetSpellTexture, GetSpellCount, GetSpellCooldown, IsAttackSpell, IsCurrentSpell
--- GLOBALS: FindSpellBookSlotBySpellID, IsUsableSpell, IsConsumableSpell, IsSpellInRange, IsAutoRepeatSpell
--- GLOBALS: GetItemIcon, GetItemCount, GetItemCooldown, IsEquippedItem, IsCurrentItem, IsUsableItem, IsConsumableItem, IsItemInRange
--- GLOBALS: GetActionCharges, IsItemAction, GetSpellCharges
--- GLOBALS: RANGE_INDICATOR, ATTACK_BUTTON_FLASH_TIME, TOOLTIP_UPDATE_TIME
--- GLOBALS: ZoneAbilityFrame, HasZoneAbility, GetLastZoneAbilitySpellTexture
 
 local WoWClassic = select(4, GetBuildInfo()) < 20000
 
@@ -111,7 +95,7 @@ local type_meta_map = {
 
 local ButtonRegistry, ActiveButtons, ActionButtons, NonActionButtons = lib.buttonRegistry, lib.activeButtons, lib.actionButtons, lib.nonActionButtons
 
-local Update, UpdateButtonState, UpdateUsable, UpdateCount, UpdateCooldown, UpdateTooltip, UpdateNewAction, ClearNewActionHighlight
+local Update, UpdateButtonState, UpdateUsable, UpdateCount, UpdateCooldown, UpdateTooltip, UpdateNewAction, UpdateSpellHighlight, ClearNewActionHighlight
 local StartFlash, StopFlash, UpdateFlash, UpdateHotkeys, UpdateRangeTimer, UpdateOverlayGlow
 local UpdateFlyout, ShowGrid, HideGrid, UpdateGrid, SetupSecureSnippets, WrapOnClick
 local ShowOverlayGlow, HideOverlayGlow
@@ -195,7 +179,9 @@ function lib:CreateButton(id, name, header, config)
 	WrapOnClick(button)
 
 	-- adjust hotkey style for better readability
-	-- button.HotKey:SetFont(button.HotKey:GetFont(), 13, "OUTLINE")
+	button.HotKey:SetFont(button.HotKey:GetFont(), 13, "OUTLINE")
+	button.HotKey:SetVertexColor(0.75, 0.75, 0.75)
+	button.HotKey:SetPoint("TOPLEFT", button, "TOPLEFT", -2, -4)
 
 	-- adjust count/stack size
 	-- button.Count:SetFont(button.Count:GetFont(), 16, "OUTLINE")
@@ -1115,6 +1101,10 @@ function Update(self)
 		if self.chargeCooldown then
 			EndChargeCooldown(self.chargeCooldown)
 		end
+
+		if self.LevelLinkLockIcon then
+			self.LevelLinkLockIcon:SetShown(false)
+		end
 	end
 
 	-- Add a green border if button is an equipped item
@@ -1184,6 +1174,8 @@ function Update(self)
 
 	UpdateNewAction(self)
 
+	UpdateSpellHighlight(self)
+
 	if GameTooltip_GetOwnerForbidden() == self then
 		UpdateTooltip(self)
 	end
@@ -1232,6 +1224,18 @@ function UpdateUsable(self)
 			self.icon:SetVertexColor(unpack(self.config.colors.unusable))
 		end
 	end
+
+	if not WoWClassic and self._state_type == "action" then
+		local isLevelLinkLocked = C_LevelLink.IsActionLocked(self._state_action)
+		if not self.icon:IsDesaturated() then
+			self.icon:SetDesaturated(isLevelLinkLocked)
+		end
+
+		if self.LevelLinkLockIcon then
+			self.LevelLinkLockIcon:SetShown(isLevelLinkLocked)
+		end
+	end
+
 	lib.callbacks:Fire("OnButtonUsable", self)
 end
 
@@ -1327,7 +1331,7 @@ function UpdateCooldown(self)
 			self.cooldown:SetScript("OnCooldownDone", OnCooldownDone)
 		end
 
-		if charges and maxCharges and charges > 0 and charges < maxCharges then
+		if charges and maxCharges and maxCharges > 1 and charges < maxCharges then
 			StartChargeCooldown(self, chargeStart, chargeDuration, chargeModRate)
 		elseif self.chargeCooldown then
 			EndChargeCooldown(self.chargeCooldown)
@@ -1375,11 +1379,9 @@ function UpdateHotkeys(self)
 	local key = self:GetHotkey()
 	if not key or key == "" or self.config.hideElements.hotkey then
 		self.HotKey:SetText(RANGE_INDICATOR)
-		self.HotKey:SetPoint("LEFT", self, "LEFT", 1, 0)
 		self.HotKey:Hide()
 	else
 		self.HotKey:SetText(key)
-		self.HotKey:SetPoint("LEFT", self, "LEFT", - 2, 0)
 		self.HotKey:Show()
 	end
 end
@@ -1451,6 +1453,54 @@ function UpdateNewAction(self)
 		else
 			self.NewActionTexture:Hide()
 		end
+	end
+end
+
+hooksecurefunc("UpdateOnBarHighlightMarksBySpell", function(spellID)
+	lib.ON_BAR_HIGHLIGHT_MARK_TYPE = "spell"
+	lib.ON_BAR_HIGHLIGHT_MARK_ID = tonumber(spellID)
+
+	for button in next, ButtonRegistry do
+		UpdateSpellHighlight(button)
+	end
+end)
+
+hooksecurefunc("UpdateOnBarHighlightMarksByFlyout", function(flyoutID)
+	lib.ON_BAR_HIGHLIGHT_MARK_TYPE = "flyout"
+	lib.ON_BAR_HIGHLIGHT_MARK_ID = tonumber(flyoutID)
+
+	for button in next, ButtonRegistry do
+		UpdateSpellHighlight(button)
+	end
+end)
+
+hooksecurefunc("ClearOnBarHighlightMarks", function()
+	lib.ON_BAR_HIGHLIGHT_MARK_TYPE = nil
+
+	for button in next, ButtonRegistry do
+		UpdateSpellHighlight(button)
+	end
+end)
+
+function UpdateSpellHighlight(self)
+	local shown = false
+
+	local highlightType, id = lib.ON_BAR_HIGHLIGHT_MARK_TYPE, lib.ON_BAR_HIGHLIGHT_MARK_ID
+	if highlightType == "spell" and self:GetSpellId() == id then
+		shown = true
+	elseif highlightType == "flyout" and self._state_type == "action" then
+		local actionType, actionId = GetActionInfo(self._state_action)
+		if actionType == "flyout" and actionId == id then
+			shown = true
+		end
+	end
+
+	if shown then
+		self.SpellHighlightTexture:Show()
+		self.SpellHighlightAnim:Play()
+	else
+		self.SpellHighlightTexture:Hide()
+		self.SpellHighlightAnim:Stop()
 	end
 end
 
@@ -1562,6 +1612,21 @@ Action.GetSpellId              = function(self)
 end
 Action.GetLossOfControlCooldown = function(self) return GetActionLossOfControlCooldown(self._state_action) end
 
+-- Classic overrides for item count breakage
+if WoWClassic then
+	-- if the library is present, simply use it to override action counts
+	local LibClassicSpellActionCount = LibStub("LibClassicSpellActionCount-1.0", true)
+	if LibClassicSpellActionCount then
+		Action.GetCount = function(self) return LibClassicSpellActionCount:GetActionCount(self._state_action) end
+	else
+		-- if we don't have the library, only show count for items, like the default UI
+		Action.IsConsumableOrStackable = function(self) return IsItemAction(self._state_action) and (IsConsumableAction(self._state_action) or IsStackableAction(self._state_action)) end
+	end
+
+	-- disable loss of control cooldown on classic
+	Action.GetLossOfControlCooldown = function(self) return 0,0 end
+end
+
 -----------------------------------------------------------
 --- Spell Button
 Spell.HasAction               = function(self) return true end
@@ -1579,6 +1644,7 @@ Spell.IsConsumableOrStackable = function(self) return IsConsumableSpell(self._st
 Spell.IsUnitInRange           = function(self, unit) return IsSpellInRange(FindSpellBookSlotBySpellID(self._state_action), "spell", unit) end -- needs spell book id as of 4.0.1.13066
 Spell.SetTooltip              = function(self) return GameTooltip:SetSpellByID(self._state_action) end
 Spell.GetSpellId              = function(self) return self._state_action end
+Spell.GetLossOfControlCooldown = function(self) return GetSpellLossOfControlCooldown(self._state_action) end
 
 -----------------------------------------------------------
 --- Item Button
