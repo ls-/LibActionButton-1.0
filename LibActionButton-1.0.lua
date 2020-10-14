@@ -181,7 +181,7 @@ function lib:CreateButton(id, name, header, config)
 	-- adjust hotkey style for better readability
 	-- button.HotKey:SetFont(button.HotKey:GetFont(), 13, "OUTLINE")
 	-- button.HotKey:SetVertexColor(0.75, 0.75, 0.75)
-	-- button.HotKey:SetPoint("TOPLEFT", button, "TOPLEFT", -2, -4)
+	button.HotKey:SetPoint("TOPLEFT", button, "TOPLEFT", -2, -4)
 
 	-- adjust count/stack size
 	-- button.Count:SetFont(button.Count:GetFont(), 16, "OUTLINE")
