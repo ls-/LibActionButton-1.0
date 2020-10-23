@@ -488,7 +488,7 @@ function Generic:AddToMasque(group)
 	if type(group) ~= "table" or type(group.AddButton) ~= "function" then
 		error("LibActionButton-1.0:AddToMasque: You need to supply a proper group to use!", 2)
 	end
-	group:AddButton(self)
+	group:AddButton(self, nil, "Action")
 	self.MasqueSkinned = true
 end
 
