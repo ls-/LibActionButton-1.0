@@ -56,6 +56,7 @@ read_globals = {
 	"GetSpellInfo",
 	"GetSpellLossOfControlCooldown",
 	"GetSpellTexture",
+	"GetTime",
 	"HasAction",
 	"HasZoneAbility",
 	"InCombatLockdown",
