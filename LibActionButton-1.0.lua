@@ -719,7 +719,7 @@ function OnEvent(frame, event, arg1, ...)
 	elseif event == "UPDATE_SHAPESHIFT_FORM" then
 		-- the attack icon can change when shapeshift form changes, so need to do a quick update here
 		-- for performance reasons don't run full updates here, though
-		for button in next, ButtonRegistry do
+		for button in next, ActiveButtons do
 			local texture = button:GetTexture()
 			if texture then
 				button.icon:SetTexture(texture)
