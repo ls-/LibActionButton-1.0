@@ -93,6 +93,7 @@ read_globals = {
 
 	-- FrameXML API
 	"ActionButton_HideOverlayGlow",
+	"ActionButton_UpdateFlyout",
 	"CooldownFrame_Set",
 	"GameTooltip_SetDefaultAnchor",
 	"SetClampedTextureRotation",
