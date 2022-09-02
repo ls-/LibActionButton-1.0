@@ -29,7 +29,7 @@ SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 
 ]]
 local MAJOR_VERSION = "LibActionButton-1.0"
-local MINOR_VERSION = 84
+local MINOR_VERSION = 85
 
 if not LibStub then error(MAJOR_VERSION .. " requires LibStub.") end
 local lib, oldversion = LibStub:NewLibrary(MAJOR_VERSION, MINOR_VERSION)
@@ -1259,9 +1259,37 @@ local function OnCooldownDone(self)
 end
 
 function UpdateCooldown(self)
-	local locStart, locDuration = self:GetLossOfControlCooldown()
-	local start, duration, enable, modRate = self:GetCooldown()
-	local charges, maxCharges, chargeStart, chargeDuration, chargeModRate = self:GetCharges()
+	local locStart, locDuration
+	local start, duration, enable, modRate
+	local charges, maxCharges, chargeStart, chargeDuration, chargeModRate
+	local auraData
+
+	local passiveCooldownSpellID = self:GetPassiveCooldownSpellID()
+	if passiveCooldownSpellID and passiveCooldownSpellID ~= 0 then
+		auraData = C_UnitAuras.GetPlayerAuraBySpellID(passiveCooldownSpellID)
+	end
+
+	if auraData then
+		local currentTime = GetTime()
+		local timeUntilExpire = auraData.expirationTime - currentTime
+		local howMuchTimeHasPassed = auraData.duration - timeUntilExpire
+
+		locStart =  currentTime - howMuchTimeHasPassed
+		locDuration = auraData.expirationTime - currentTime
+		start = currentTime - howMuchTimeHasPassed
+		duration =  auraData.duration
+		modRate = auraData.timeMod
+		charges = auraData.charges
+		maxCharges = auraData.maxCharges
+		chargeStart = currentTime * 0.001
+		chargeDuration = duration * 0.001
+		chargeModRate = modRate
+		enable = 1
+	else
+		locStart, locDuration = self:GetLossOfControlCooldown()
+		start, duration, enable, modRate = self:GetCooldown()
+		charges, maxCharges, chargeStart, chargeDuration, chargeModRate = self:GetCharges()
+	end
 
 	self.cooldown:SetDrawBling(self.cooldown:GetEffectiveAlpha() > 0.5)
 
@@ -1273,6 +1301,9 @@ function UpdateCooldown(self)
 			self.cooldown.currentCooldownType = COOLDOWN_TYPE_LOSS_OF_CONTROL
 		end
 		CooldownFrame_Set(self.cooldown, locStart, locDuration, true, true, modRate)
+		if self.chargeCooldown then
+			EndChargeCooldown(self.chargeCooldown)
+		end
 	else
 		if self.cooldown.currentCooldownType ~= COOLDOWN_TYPE_NORMAL then
 			self.cooldown:SetEdgeTexture("Interface\\Cooldown\\edge")
@@ -1600,6 +1631,7 @@ end
 Generic.SetTooltip              = function(self) return nil end
 Generic.GetSpellId              = function(self) return nil end
 Generic.GetLossOfControlCooldown = function(self) return 0, 0 end
+Generic.GetPassiveCooldownSpellID = function(self) return nil end
 
 -----------------------------------------------------------
 --- Action Button
@@ -1626,6 +1658,23 @@ Action.GetSpellId              = function(self)
 	end
 end
 Action.GetLossOfControlCooldown = function(self) return GetActionLossOfControlCooldown(self._state_action) end
+if C_UnitAuras then
+	Action.GetPassiveCooldownSpellID = function(self)
+		local _actionType, actionID = GetActionInfo(self._state_action)
+		local onEquipPassiveSpellID
+		if actionID then
+			onEquipPassiveSpellID = C_ActionBar.GetItemActionOnEquipSpellID(self._state_action)
+		end
+		if onEquipPassiveSpellID then
+			return C_UnitAuras.GetCooldownAuraBySpellID(onEquipPassiveSpellID)
+		else
+			local spellID = self:GetSpellId()
+			if spellID then
+				return C_UnitAuras.GetCooldownAuraBySpellID(spellID)
+			end
+		end
+	end
+end
 
 -- Classic overrides for item count breakage
 if WoWClassic then
@@ -1662,6 +1711,13 @@ Spell.IsUnitInRange           = function(self, unit) return IsSpellInRange(FindS
 Spell.SetTooltip              = function(self) return GameTooltip:SetSpellByID(self._state_action) end
 Spell.GetSpellId              = function(self) return self._state_action end
 Spell.GetLossOfControlCooldown = function(self) return GetSpellLossOfControlCooldown(self._state_action) end
+if C_UnitAuras then
+	Spell.GetPassiveCooldownSpellID = function(self)
+		if self._state_action then
+			return C_UnitAuras.GetCooldownAuraBySpellID(self._state_action)
+		end
+	end
+end
 
 -----------------------------------------------------------
 --- Item Button
@@ -1684,6 +1740,7 @@ Item.IsConsumableOrStackable = function(self) return IsConsumableItem(self._stat
 Item.IsUnitInRange           = function(self, unit) return IsItemInRange(self._state_action, unit) end
 Item.SetTooltip              = function(self) return GameTooltip:SetHyperlink(self._state_action) end
 Item.GetSpellId              = function(self) return nil end
+Item.GetPassiveCooldownSpellID = function(self) return nil end
 
 -----------------------------------------------------------
 --- Macro Button
@@ -1703,6 +1760,7 @@ Macro.IsConsumableOrStackable = function(self) return nil end
 Macro.IsUnitInRange           = function(self, unit) return nil end
 Macro.SetTooltip              = function(self) return nil end
 Macro.GetSpellId              = function(self) return nil end
+Macro.GetPassiveCooldownSpellID = function(self) return nil end
 
 -----------------------------------------------------------
 --- Custom Button
@@ -1722,6 +1780,7 @@ Custom.IsUnitInRange           = function(self, unit) return nil end
 Custom.SetTooltip              = function(self) return GameTooltip:SetText(self._state_action.tooltip) end
 Custom.GetSpellId              = function(self) return nil end
 Custom.RunCustom               = function(self, unit, button) return self._state_action.func(self, unit, button) end
+Custom.GetPassiveCooldownSpellID = function(self) return nil end
 
 --- WoW Classic overrides
 if WoWClassic or WoWBCC or WoWWrath then

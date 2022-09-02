@@ -25,6 +25,8 @@ read_globals = {
 
 	-- API categories
 	"C_LevelLink",
+	"C_ActionBar",
+	"C_UnitAuras",
 
 	-- API functions
 	"ClearCursor",
