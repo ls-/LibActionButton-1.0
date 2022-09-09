@@ -29,7 +29,7 @@ SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 
 ]]
 local MAJOR_VERSION = "LibActionButton-1.0"
-local MINOR_VERSION = 86
+local MINOR_VERSION = 87
 
 if not LibStub then error(MAJOR_VERSION .. " requires LibStub.") end
 local lib, oldversion = LibStub:NewLibrary(MAJOR_VERSION, MINOR_VERSION)
@@ -1100,22 +1100,26 @@ function Update(self)
 		self.icon:SetTexture(texture)
 		self.icon:Show()
 		self.rangeTimer = - 1
-		self:SetNormalTexture("Interface\\Buttons\\UI-Quickslot2")
-		if not self.LBFSkinned and not self.MasqueSkinned then
-			self.NormalTexture:SetTexCoord(0, 0, 0, 0)
+		if not WoW10 then
+			self:SetNormalTexture("Interface\\Buttons\\UI-Quickslot2")
+			if not self.LBFSkinned and not self.MasqueSkinned then
+				self.NormalTexture:SetTexCoord(0, 0, 0, 0)
+			end
 		end
 	else
 		self.icon:Hide()
 		self.cooldown:Hide()
 		self.rangeTimer = nil
-		self:SetNormalTexture("Interface\\Buttons\\UI-Quickslot")
 		if self.HotKey:GetText() == RANGE_INDICATOR then
 			self.HotKey:Hide()
 		else
 			self.HotKey:SetVertexColor(0.75, 0.75, 0.75)
 		end
-		if not self.LBFSkinned and not self.MasqueSkinned then
-			self.NormalTexture:SetTexCoord(-0.15, 1.15, -0.15, 1.17)
+		if not WoW10 then
+			self:SetNormalTexture("Interface\\Buttons\\UI-Quickslot")
+			if not self.LBFSkinned and not self.MasqueSkinned then
+				self.NormalTexture:SetTexCoord(-0.15, 1.15, -0.15, 1.17)
+			end
 		end
 	end
 
