@@ -29,7 +29,7 @@ SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 
 ]]
 local MAJOR_VERSION = "LibActionButton-1.0"
-local MINOR_VERSION = 87
+local MINOR_VERSION = 88
 
 if not LibStub then error(MAJOR_VERSION .. " requires LibStub.") end
 local lib, oldversion = LibStub:NewLibrary(MAJOR_VERSION, MINOR_VERSION)
@@ -149,7 +149,11 @@ function lib:CreateButton(id, name, header, config)
 
 	local button = setmetatable(CreateFrame("CheckButton", name, header, "SecureActionButtonTemplate, ActionButtonTemplate"), Generic_MT)
 	button:RegisterForDrag("LeftButton", "RightButton")
-	button:RegisterForClicks("AnyDown", "AnyUp")
+	if WoW10 then
+		button:RegisterForClicks("AnyDown", "AnyUp")
+	else
+		button:RegisterForClicks("AnyUp")
+	end
 
 	-- Frame Scripts
 	button:SetScript("OnEnter", Generic.OnEnter)
