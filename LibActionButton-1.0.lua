@@ -231,7 +231,7 @@ function SetupSecureSnippets(button)
 					--[=[
 						local spellID = GetMacroSpell(id)
 						if spellID then
-							pressAndHold = IsPressHoldReleaseSpell(id)
+							pressAndHold = IsPressHoldReleaseSpell(spellID)
 						end
 					]=]
 				end
