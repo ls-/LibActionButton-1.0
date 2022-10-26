@@ -29,7 +29,7 @@ SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 
 ]]
 local MAJOR_VERSION = "LibActionButton-1.0"
-local MINOR_VERSION = 91
+local MINOR_VERSION = 92
 
 if not LibStub then error(MAJOR_VERSION .. " requires LibStub.") end
 local lib, oldversion = LibStub:NewLibrary(MAJOR_VERSION, MINOR_VERSION)
@@ -125,6 +125,8 @@ local DefaultConfig = {
 		macro = false,
 		hotkey = false,
 		equipped = false,
+		border = false,
+		borderIfEmpty = false,
 	},
 	keyBoundTarget = false,
 	keyBoundClickButton = "LeftButton",
@@ -1163,7 +1165,15 @@ function Update(self)
 		self.icon:SetTexture(texture)
 		self.icon:Show()
 		self.rangeTimer = - 1
-		if not WoW10 then
+		if WoW10 then
+			if not self.MasqueSkinned then
+				if self.config.hideElements.border then
+					self.NormalTexture:SetTexture()
+				else
+					self:SetNormalAtlas("UI-HUD-ActionBar-IconFrame-AddRow")
+				end
+			end
+		else
 			self:SetNormalTexture("Interface\\Buttons\\UI-Quickslot2")
 			if not self.LBFSkinned and not self.MasqueSkinned then
 				self.NormalTexture:SetTexCoord(0, 0, 0, 0)
@@ -1178,7 +1188,15 @@ function Update(self)
 		else
 			self.HotKey:SetVertexColor(0.75, 0.75, 0.75)
 		end
-		if not WoW10 then
+		if WoW10 then
+			if not self.MasqueSkinned then
+				if self.config.hideElements.borderIfEmpty then
+					self.NormalTexture:SetTexture()
+				else
+					self:SetNormalAtlas("UI-HUD-ActionBar-IconFrame-AddRow")
+				end
+			end
+		else
 			self:SetNormalTexture("Interface\\Buttons\\UI-Quickslot")
 			if not self.LBFSkinned and not self.MasqueSkinned then
 				self.NormalTexture:SetTexCoord(-0.15, 1.15, -0.15, 1.17)
