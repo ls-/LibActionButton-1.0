@@ -29,7 +29,7 @@ SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 
 ]]
 local MAJOR_VERSION = "LibActionButton-1.0"
-local MINOR_VERSION = 90
+local MINOR_VERSION = 91
 
 if not LibStub then error(MAJOR_VERSION .. " requires LibStub.") end
 local lib, oldversion = LibStub:NewLibrary(MAJOR_VERSION, MINOR_VERSION)
@@ -127,6 +127,7 @@ local DefaultConfig = {
 		equipped = false,
 	},
 	keyBoundTarget = false,
+	keyBoundClickButton = "LeftButton",
 	clickOnDown = false,
 	flyoutDirection = "UP",
 }
@@ -377,11 +378,15 @@ function WrapOnClick(button)
 
 			-- if this is a pickup click, disable on-down casting
 			-- it should get re-enabled in the post handler, or the OnDragStart handler, whichever occurs
-			if type and ((self:GetAttribute("unlockedpreventdrag") and not self:GetAttribute("buttonlock")) or IsModifiedClick("PICKUPACTION")) and not self:GetAttribute("LABdisableDragNDrop") then
+			if type and button ~= "Keybind" and ((self:GetAttribute("unlockedpreventdrag") and not self:GetAttribute("buttonlock")) or IsModifiedClick("PICKUPACTION")) and not self:GetAttribute("LABdisableDragNDrop") then
 				self:CallMethod("ToggleOnDownForPickup", true)
 				self:SetAttribute("LABToggledOnDown", true)
 			end
-			return nil, format("%s|%s", tostring(type), tostring(action))
+			return (button == "Keybind") and "LeftButton" or nil, format("%s|%s", tostring(type), tostring(action))
+		end
+
+		if button == "Keybind" then
+			return "LeftButton"
 		end
 	]], [[
 		local type, action = GetActionInfo(self:GetAttribute("action"))
@@ -1020,11 +1025,11 @@ end
 --- KeyBound integration
 
 function Generic:GetBindingAction()
-	return self.config.keyBoundTarget or "CLICK "..self:GetName()..":LeftButton"
+	return self.config.keyBoundTarget or ("CLICK %s:%s"):format(self:GetName(), self.config.keyBoundClickButton)
 end
 
 function Generic:GetHotkey()
-	local name = "CLICK "..self:GetName()..":LeftButton"
+	local name = ("CLICK %s:%s"):format(self:GetName(), self.config.keyBoundClickButton)
 	local key = GetBindingKey(self.config.keyBoundTarget or name)
 	if not key and self.config.keyBoundTarget then
 		key = GetBindingKey(name)
@@ -1053,7 +1058,7 @@ function Generic:GetBindings()
 		keys = getKeys(self.config.keyBoundTarget)
 	end
 
-	keys = getKeys("CLICK "..self:GetName()..":LeftButton", keys)
+	keys = getKeys(("CLICK %s:%s"):format(self:GetName(), self.config.keyBoundClickButton), keys)
 
 	return keys
 end
@@ -1062,7 +1067,7 @@ function Generic:SetKey(key)
 	if self.config.keyBoundTarget then
 		SetBinding(key, self.config.keyBoundTarget)
 	else
-		SetBindingClick(key, self:GetName(), "LeftButton")
+		SetBindingClick(key, self:GetName(), self.config.keyBoundClickButton)
 	end
 	lib.callbacks:Fire("OnKeybindingChanged", self, key)
 end
@@ -1077,7 +1082,7 @@ function Generic:ClearBindings()
 	if self.config.keyBoundTarget then
 		clearBindings(self.config.keyBoundTarget)
 	end
-	clearBindings("CLICK "..self:GetName()..":LeftButton")
+	clearBindings(("CLICK %s:%s"):format(self:GetName(), self.config.keyBoundClickButton))
 	lib.callbacks:Fire("OnKeybindingChanged", self, nil)
 end
 
