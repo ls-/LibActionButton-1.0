@@ -45,6 +45,7 @@ read_globals = {
 	"GetBuildInfo",
 	"GetCursorInfo",
 	"GetCVar",
+	"GetCVarBool",
 	"GetItemIcon",
 	"GetItemCooldown",
 	"GetItemCount",
@@ -92,6 +93,7 @@ read_globals = {
 	"PickupSpell",
 	"SetBinding",
 	"SetBindingClick",
+	"SetCVar",
 
 	-- FrameXML API
 	"ActionButton_HideOverlayGlow",

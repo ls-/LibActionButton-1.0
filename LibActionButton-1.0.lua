@@ -29,7 +29,7 @@ SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 
 ]]
 local MAJOR_VERSION = "LibActionButton-1.0"
-local MINOR_VERSION = 89
+local MINOR_VERSION = 90
 
 if not LibStub then error(MAJOR_VERSION .. " requires LibStub.") end
 local lib, oldversion = LibStub:NewLibrary(MAJOR_VERSION, MINOR_VERSION)
@@ -374,6 +374,13 @@ function WrapOnClick(button)
 	button.header:WrapScript(button, "OnClick", [[
 		if self:GetAttribute("type") == "action" then
 			local type, action = GetActionInfo(self:GetAttribute("action"))
+
+			-- if this is a pickup click, disable on-down casting
+			-- it should get re-enabled in the post handler, or the OnDragStart handler, whichever occurs
+			if type and ((self:GetAttribute("unlockedpreventdrag") and not self:GetAttribute("buttonlock")) or IsModifiedClick("PICKUPACTION")) and not self:GetAttribute("LABdisableDragNDrop") then
+				self:CallMethod("ToggleOnDownForPickup", true)
+				self:SetAttribute("LABToggledOnDown", true)
+			end
 			return nil, format("%s|%s", tostring(type), tostring(action))
 		end
 	]], [[
@@ -381,7 +388,28 @@ function WrapOnClick(button)
 		if message ~= format("%s|%s", tostring(type), tostring(action)) then
 			self:RunAttribute("UpdateState", self:GetAttribute("state"))
 		end
+
+		-- re-enable ondown casting if needed
+		if self:GetAttribute("LABToggledOnDown") then
+			self:SetAttribute("LABToggledOnDown", nil)
+			self:CallMethod("ToggleOnDownForPickup", false)
+		end
 	]])
+end
+
+local _LABActionButtonUseKeyDown
+function Generic:ToggleOnDownForPickup(pre)
+	if pre then
+		if GetCVarBool("ActionButtonUseKeyDown") or _LABActionButtonUseKeyDown then
+			SetCVar("ActionButtonUseKeyDown", false)
+			_LABActionButtonUseKeyDown = true
+		else
+			_LABActionButtonUseKeyDown = false
+		end
+	elseif not pre and _LABActionButtonUseKeyDown then
+		SetCVar("ActionButtonUseKeyDown", true)
+		_LABActionButtonUseKeyDown = nil
+	end
 end
 
 -----------------------------------------------------------
