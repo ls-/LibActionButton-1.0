@@ -1169,8 +1169,17 @@ function Update(self)
 			if not self.MasqueSkinned then
 				if self.config.hideElements.border then
 					self.NormalTexture:SetTexture()
+					self.icon:RemoveMaskTexture(self.IconMask)
+					self.HighlightTexture:SetSize(52, 51)
+					self.HighlightTexture:SetPoint("TOPLEFT", self, "TOPLEFT", -2.5, 2.5)
+					self.PushedTexture:SetSize(51, 51)
 				else
 					self:SetNormalAtlas("UI-HUD-ActionBar-IconFrame-AddRow")
+					self.icon:AddMaskTexture(self.IconMask)
+					self.HighlightTexture:SetSize(46, 45)
+					self.HighlightTexture:SetPoint("TOPLEFT")
+					self.PushedTexture:SetSize(46, 45)
+					self.PushedTexture:SetPoint("TOPLEFT")
 				end
 			end
 		else
