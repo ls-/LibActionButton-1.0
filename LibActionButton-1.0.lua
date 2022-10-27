@@ -29,7 +29,7 @@ SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 
 ]]
 local MAJOR_VERSION = "LibActionButton-1.0"
-local MINOR_VERSION = 92
+local MINOR_VERSION = 93
 
 if not LibStub then error(MAJOR_VERSION .. " requires LibStub.") end
 local lib, oldversion = LibStub:NewLibrary(MAJOR_VERSION, MINOR_VERSION)
@@ -1172,14 +1172,11 @@ function Update(self)
 					self.icon:RemoveMaskTexture(self.IconMask)
 					self.HighlightTexture:SetSize(52, 51)
 					self.HighlightTexture:SetPoint("TOPLEFT", self, "TOPLEFT", -2.5, 2.5)
-					self.PushedTexture:SetSize(51, 51)
 				else
 					self:SetNormalAtlas("UI-HUD-ActionBar-IconFrame-AddRow")
 					self.icon:AddMaskTexture(self.IconMask)
 					self.HighlightTexture:SetSize(46, 45)
 					self.HighlightTexture:SetPoint("TOPLEFT")
-					self.PushedTexture:SetSize(46, 45)
-					self.PushedTexture:SetPoint("TOPLEFT")
 				end
 			end
 		else
