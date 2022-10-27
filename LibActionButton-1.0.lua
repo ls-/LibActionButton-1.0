@@ -29,7 +29,7 @@ SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 
 ]]
 local MAJOR_VERSION = "LibActionButton-1.0"
-local MINOR_VERSION = 94
+local MINOR_VERSION = 95
 
 if not LibStub then error(MAJOR_VERSION .. " requires LibStub.") end
 local lib, oldversion = LibStub:NewLibrary(MAJOR_VERSION, MINOR_VERSION)
@@ -1167,6 +1167,7 @@ function Update(self)
 		self.rangeTimer = - 1
 		if WoW10 then
 			if not self.MasqueSkinned then
+				self.SlotBackground:Hide()
 				if self.config.hideElements.border then
 					self.NormalTexture:SetTexture()
 					self.icon:RemoveMaskTexture(self.IconMask)
@@ -1196,6 +1197,7 @@ function Update(self)
 		end
 		if WoW10 then
 			if not self.MasqueSkinned then
+				self.SlotBackground:Show()
 				if self.config.hideElements.borderIfEmpty then
 					self.NormalTexture:SetTexture()
 				else
