@@ -29,7 +29,7 @@ SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 
 ]]
 local MAJOR_VERSION = "LibActionButton-1.0"
-local MINOR_VERSION = 97
+local MINOR_VERSION = 98
 
 if not LibStub then error(MAJOR_VERSION .. " requires LibStub.") end
 local lib, oldversion = LibStub:NewLibrary(MAJOR_VERSION, MINOR_VERSION)
@@ -132,6 +132,36 @@ local DefaultConfig = {
 	keyBoundClickButton = "LeftButton",
 	clickOnDown = false,
 	flyoutDirection = "UP",
+	text = {
+		hotkey = {
+			font = {
+				font = false, -- "Fonts\\ARIALN.TTF",
+				size = 14,
+				flags = "OUTLINE",
+			},
+			color = { 0.75, 0.75, 0.75 },
+			position = {
+				anchor = "TOPRIGHT",
+				relAnchor = "TOPRIGHT",
+				offsetX = -2,
+				offsetY = -4,
+			},
+		},
+		count = {
+			font = {
+				font = false, -- "Fonts\\ARIALN.TTF",
+				size = 16,
+				flags = "OUTLINE",
+			},
+			color = { 1, 1, 1 },
+			position = {
+				anchor = "BOTTOMRIGHT",
+				relAnchor = "BOTTOMRIGHT",
+				offsetX = -2,
+				offsetY = 4,
+			},
+		},
+	},
 }
 
 --- Create a new action button.
@@ -179,14 +209,6 @@ function lib:CreateButton(id, name, header, config)
 
 	SetupSecureSnippets(button)
 	WrapOnClick(button)
-
-	-- adjust hotkey style for better readability
-	button.HotKey:SetFont(button.HotKey:GetFont(), 13, "OUTLINE")
-	button.HotKey:SetVertexColor(0.75, 0.75, 0.75)
-	button.HotKey:SetPoint("TOPLEFT", button, "TOPLEFT", -2, -4)
-
-	-- adjust count/stack size
-	button.Count:SetFont(button.Count:GetFont(), 16, "OUTLINE")
 
 	-- Store the button in the registry, needed for event and OnUpdate handling
 	if not next(ButtonRegistry) then
@@ -684,6 +706,19 @@ local function merge(target, source, default)
 	return target
 end
 
+local function UpdateTextElement(element, config, defaultFont)
+	element:SetFont(config.font.font or defaultFont, config.font.size, config.font.flags or "")
+	element:ClearAllPoints()
+	element:SetPoint(config.position.anchor, element:GetParent(), config.position.relAnchor or config.position.anchor, config.position.offsetX or 0, config.position.offsetY or 0)
+
+	element:SetVertexColor(unpack(config.color))
+end
+
+local function UpdateTextElements(button)
+	UpdateTextElement(button.HotKey, button.config.text.hotkey, NumberFontNormalSmallGray:GetFont())
+	UpdateTextElement(button.Count, button.config.text.count, NumberFontNormal:GetFont())
+end
+
 function Generic:UpdateConfig(config)
 	if config and type(config) ~= "table" then
 		error("LibActionButton-1.0: UpdateConfig requires a valid configuration!", 2)
@@ -698,8 +733,6 @@ function Generic:UpdateConfig(config)
 	end
 	if self.config.outOfRangeColoring == "hotkey" then
 		self.outOfRange = nil
-	elseif oldconfig and oldconfig.outOfRangeColoring == "hotkey" then
-		self.HotKey:SetVertexColor(0.75, 0.75, 0.75)
 	end
 
 	if self.config.hideElements.macro then
@@ -710,6 +743,7 @@ function Generic:UpdateConfig(config)
 
 	self:SetAttribute("flyoutDirection", self.config.flyoutDirection)
 
+	UpdateTextElements(self)
 	UpdateHotkeys(self)
 	UpdateGrid(self)
 	Update(self)
@@ -985,7 +1019,7 @@ function OnUpdate(_, elapsed)
 						if inRange == false then
 							hotkey:SetVertexColor(unpack(button.config.colors.range))
 						else
-							hotkey:SetVertexColor(0.75, 0.75, 0.75)
+							hotkey:SetVertexColor(unpack(button.config.text.hotkey.color))
 						end
 					end
 				end
@@ -1214,7 +1248,7 @@ function Update(self)
 		if self.HotKey:GetText() == RANGE_INDICATOR then
 			self.HotKey:Hide()
 		else
-			self.HotKey:SetVertexColor(0.75, 0.75, 0.75)
+			self.HotKey:SetVertexColor(unpack(self.config.text.hotkey.color))
 		end
 		if WoW10 then
 			if not self.MasqueSkinned then

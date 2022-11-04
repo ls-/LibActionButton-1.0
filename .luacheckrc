@@ -107,6 +107,10 @@ read_globals = {
 	"SpellFlyout",
 	"UIParent",
 
+	-- Fonts
+	"NumberFontNormal",
+	"NumberFontNormalSmallGray",
+
 	-- FrameXML Constants
 	"ACTION_HIGHLIGHT_MARKS",
 	"ATTACK_BUTTON_FLASH_TIME",
