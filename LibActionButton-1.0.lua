@@ -29,7 +29,7 @@ SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 
 ]]
 local MAJOR_VERSION = "LibActionButton-1.0"
-local MINOR_VERSION = 96
+local MINOR_VERSION = 97
 
 if not LibStub then error(MAJOR_VERSION .. " requires LibStub.") end
 local lib, oldversion = LibStub:NewLibrary(MAJOR_VERSION, MINOR_VERSION)
@@ -163,6 +163,7 @@ function lib:CreateButton(id, name, header, config)
 	button:SetScript("OnLeave", Generic.OnLeave)
 	button:SetScript("PreClick", Generic.PreClick)
 	button:SetScript("PostClick", Generic.PostClick)
+	button:SetScript("OnEvent", Generic.OnButtonEvent)
 
 	button.id = id
 	button.header = header
@@ -404,6 +405,13 @@ function WrapOnClick(button)
 	]])
 end
 
+function Generic:OnButtonEvent(event, ...)
+	if event == "GLOBAL_MOUSE_UP" then
+		self:SetButtonState("NORMAL")
+		self:UnregisterEvent(event)
+	end
+end
+
 local _LABActionButtonUseKeyDown
 function Generic:ToggleOnDownForPickup(pre)
 	if pre then
@@ -629,7 +637,7 @@ local function formatHelper(input)
 	end
 end
 
-function Generic:PostClick()
+function Generic:PostClick(button, down)
 	UpdateButtonState(self)
 	if self._receiving_drag and not InCombatLockdown() then
 		if self._old_type then
@@ -650,6 +658,10 @@ function Generic:PostClick()
 
 	if self._state_type == "action" and lib.ACTION_HIGHLIGHT_MARKS[self._state_action] then
 		ClearNewActionHighlight(self._state_action, false, false)
+	end
+
+	if down and button ~= "Keybind" then
+		self:RegisterEvent("GLOBAL_MOUSE_UP")
 	end
 end
 
