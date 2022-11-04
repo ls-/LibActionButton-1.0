@@ -29,7 +29,7 @@ SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 
 ]]
 local MAJOR_VERSION = "LibActionButton-1.0"
-local MINOR_VERSION = 98
+local MINOR_VERSION = 99
 
 if not LibStub then error(MAJOR_VERSION .. " requires LibStub.") end
 local lib, oldversion = LibStub:NewLibrary(MAJOR_VERSION, MINOR_VERSION)
@@ -159,6 +159,20 @@ local DefaultConfig = {
 				relAnchor = "BOTTOMRIGHT",
 				offsetX = -2,
 				offsetY = 4,
+			},
+		},
+		macro = {
+			font = {
+				font = false, -- "Fonts\\FRIZQT__.TTF",
+				size = 10,
+				flags = "OUTLINE",
+			},
+			color = { 1, 1, 1 },
+			position = {
+				anchor = "BOTTOM",
+				relAnchor = "BOTTOM",
+				offsetX = 0,
+				offsetY = 2,
 			},
 		},
 	},
@@ -717,6 +731,7 @@ end
 local function UpdateTextElements(button)
 	UpdateTextElement(button.HotKey, button.config.text.hotkey, NumberFontNormalSmallGray:GetFont())
 	UpdateTextElement(button.Count, button.config.text.count, NumberFontNormal:GetFont())
+	UpdateTextElement(button.Name, button.config.text.macro, GameFontHighlightSmallOutline:GetFont())
 end
 
 function Generic:UpdateConfig(config)

@@ -108,6 +108,7 @@ read_globals = {
 	"UIParent",
 
 	-- Fonts
+	"GameFontHighlightSmallOutline",
 	"NumberFontNormal",
 	"NumberFontNormalSmallGray",
 
