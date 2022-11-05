@@ -29,7 +29,7 @@ SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 
 ]]
 local MAJOR_VERSION = "LibActionButton-1.0"
-local MINOR_VERSION = 99
+local MINOR_VERSION = 100
 
 if not LibStub then error(MAJOR_VERSION .. " requires LibStub.") end
 local lib, oldversion = LibStub:NewLibrary(MAJOR_VERSION, MINOR_VERSION)
@@ -146,6 +146,7 @@ local DefaultConfig = {
 				offsetX = -2,
 				offsetY = -4,
 			},
+			justifyH = "RIGHT",
 		},
 		count = {
 			font = {
@@ -160,6 +161,7 @@ local DefaultConfig = {
 				offsetX = -2,
 				offsetY = 4,
 			},
+			justifyH = "RIGHT",
 		},
 		macro = {
 			font = {
@@ -174,6 +176,7 @@ local DefaultConfig = {
 				offsetX = 0,
 				offsetY = 2,
 			},
+			justifyH = "CENTER",
 		},
 	},
 }
@@ -722,6 +725,7 @@ end
 
 local function UpdateTextElement(element, config, defaultFont)
 	element:SetFont(config.font.font or defaultFont, config.font.size, config.font.flags or "")
+	element:SetJustifyH(config.justifyH)
 	element:ClearAllPoints()
 	element:SetPoint(config.position.anchor, element:GetParent(), config.position.relAnchor or config.position.anchor, config.position.offsetX or 0, config.position.offsetY or 0)
 
