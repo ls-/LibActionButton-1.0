@@ -29,7 +29,7 @@ SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 
 ]]
 local MAJOR_VERSION = "LibActionButton-1.0"
-local MINOR_VERSION = 101
+local MINOR_VERSION = 102
 
 if not LibStub then error(MAJOR_VERSION .. " requires LibStub.") end
 local lib, oldversion = LibStub:NewLibrary(MAJOR_VERSION, MINOR_VERSION)
@@ -261,6 +261,10 @@ function lib:CreateButton(id, name, header, config)
 	lib.callbacks:Fire("OnButtonCreated", button)
 
 	return button
+end
+
+function lib:GetSpellFlyoutFrame()
+	return lib.flyoutHandler
 end
 
 function SetupSecureSnippets(button)
