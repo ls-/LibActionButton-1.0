@@ -29,7 +29,7 @@ SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 
 ]]
 local MAJOR_VERSION = "LibActionButton-1.0"
-local MINOR_VERSION = 102
+local MINOR_VERSION = 103
 
 if not LibStub then error(MAJOR_VERSION .. " requires LibStub.") end
 local lib, oldversion = LibStub:NewLibrary(MAJOR_VERSION, MINOR_VERSION)
@@ -453,6 +453,12 @@ function WrapOnClick(button)
 				return false
 			end
 
+			-- hide the flyout
+			local flyoutHandler = owner:GetFrameRef("flyoutHandler")
+			if flyoutHandler then
+				flyoutHandler:Hide()
+			end
+
 			-- if this is a pickup click, disable on-down casting
 			-- it should get re-enabled in the post handler, or the OnDragStart handler, whichever occurs
 			if button ~= "Keybind" and ((self:GetAttribute("unlockedpreventdrag") and not self:GetAttribute("buttonlock")) or IsModifiedClick("PICKUPACTION")) and not self:GetAttribute("LABdisableDragNDrop") then
@@ -460,6 +466,12 @@ function WrapOnClick(button)
 				self:SetAttribute("LABToggledOnDown", true)
 			end
 			return (button == "Keybind") and "LeftButton" or nil, format("%s|%s", tostring(type), tostring(action))
+		end
+
+		-- hide the flyout, the extra down/ownership check is needed to not hide the button we're currently pressing too early
+		local flyoutHandler = owner:GetFrameRef("flyoutHandler")
+		if flyoutHandler and not down or self:GetParent() ~= flyoutHandler then
+			flyoutHandler:Hide()
 		end
 
 		if button == "Keybind" then
@@ -912,9 +924,6 @@ if UseCustomFlyout then
 				local button = lib:CreateButton(i, "LABFlyoutButton" .. i, lib.flyoutHandler, nil)
 				button:SetScale(0.8)
 				button:Hide()
-
-				-- wrap the onclick to hide the flyout after casting the spell
-				lib.flyoutHandler:WrapScript(button, "OnClick", [[ return nil, true ]], [[ if not down then owner:Hide() end ]])
 
 				-- disable drag and drop
 				button:SetAttribute("LABdisableDragNDrop", true)
