@@ -470,7 +470,7 @@ function WrapOnClick(button)
 
 		-- hide the flyout, the extra down/ownership check is needed to not hide the button we're currently pressing too early
 		local flyoutHandler = owner:GetFrameRef("flyoutHandler")
-		if flyoutHandler and not down or self:GetParent() ~= flyoutHandler then
+		if flyoutHandler and (not down or self:GetParent() ~= flyoutHandler) then
 			flyoutHandler:Hide()
 		end
 
