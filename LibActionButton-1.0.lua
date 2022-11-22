@@ -29,7 +29,7 @@ SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 
 ]]
 local MAJOR_VERSION = "LibActionButton-1.0"
-local MINOR_VERSION = 104
+local MINOR_VERSION = 105
 
 if not LibStub then error(MAJOR_VERSION .. " requires LibStub.") end
 local lib, oldversion = LibStub:NewLibrary(MAJOR_VERSION, MINOR_VERSION)
@@ -1098,7 +1098,7 @@ function Generic:PostClick(button, down)
 		ClearNewActionHighlight(self._state_action, false, false)
 	end
 
-	if down and button ~= "Keybind" then
+	if down and IsMouseButtonDown() then
 		self:RegisterEvent("GLOBAL_MOUSE_UP")
 	end
 end

@@ -82,6 +82,7 @@ read_globals = {
 	"IsItemAction",
 	"IsItemInRange",
 	"IsLoggedIn",
+	"IsMouseButtonDown",
 	"IsSpellInRange",
 	"IsSpellOverlayed",
 	"IsStackableAction",
