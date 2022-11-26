@@ -127,7 +127,13 @@ local DefaultConfig = {
 	showGrid = false,
 	colors = {
 		range = { 0.8, 0.1, 0.1 },
-		mana = { 0.5, 0.5, 1.0 }
+		mana = { 0.5, 0.5, 1.0 },
+		normal = { 1.0, 1.0, 1.0 },
+		equipped = { 0.0, 1.0, 0.0 },
+		unusable = { 0.4, 0.4, 0.4 },
+	},
+	desaturation = {
+		unusable = false,
 	},
 	hideElements = {
 		macro = false,
@@ -1141,13 +1147,13 @@ function Generic:UpdateConfig(config)
 	if config and type(config) ~= "table" then
 		error("LibActionButton-1.0: UpdateConfig requires a valid configuration!", 2)
 	end
-	local oldconfig = self.config
+
 	self.config = {}
 	-- merge the two configs
 	merge(self.config, config, DefaultConfig)
 
-	if self.config.outOfRangeColoring == "button" or (oldconfig and oldconfig.outOfRangeColoring == "button") then
-		UpdateUsable(self)
+	if self.config.outOfRangeColoring == "button" then
+		self.HotKey:SetVertexColor(unpack(self.config.text.hotkey.color))
 	end
 	if self.config.outOfRangeColoring == "hotkey" then
 		self.outOfRange = nil
@@ -1457,11 +1463,7 @@ function OnUpdate(_, elapsed)
 					elseif button.config.outOfRangeColoring == "hotkey" then
 						local hotkey = button.HotKey
 						if hotkey:GetText() == RANGE_INDICATOR then
-							if inRange == false then
-								hotkey:Show()
-							else
-								hotkey:Hide()
-							end
+							hotkey:SetShown(inRange == false)
 						end
 						if inRange == false then
 							hotkey:SetVertexColor(unpack(button.config.colors.range))
@@ -1647,7 +1649,7 @@ function Update(self)
 
 	-- Add a green border if button is an equipped item
 	if self:IsEquipped() and not self.config.hideElements.equipped then
-		self.Border:SetVertexColor(0, 1.0, 0, 0.35)
+		self.Border:SetVertexColor(unpack(self.config.colors.equipped))
 		self.Border:Show()
 	else
 		self.Border:Hide()
@@ -1665,7 +1667,6 @@ function Update(self)
 
 	-- Zone ability button handling
 	self.zoneAbilityDisabled = false
-	self.icon:SetDesaturated(false)
 
 	if texture then
 		self.icon:SetTexture(texture)
@@ -1771,21 +1772,20 @@ function UpdateButtonState(self)
 end
 
 function UpdateUsable(self)
-	-- TODO: make the colors configurable
-	-- TODO: allow disabling of the whole recoloring
 	if self.config.outOfRangeColoring == "button" and self.outOfRange then
+		self.icon:SetDesaturated(true)
 		self.icon:SetVertexColor(unpack(self.config.colors.range))
 	else
 		local isUsable, notEnoughMana = self:IsUsable()
 		if isUsable then
-			self.icon:SetVertexColor(1.0, 1.0, 1.0)
-			--self.NormalTexture:SetVertexColor(1.0, 1.0, 1.0)
+			self.icon:SetDesaturated(false)
+			self.icon:SetVertexColor(unpack(self.config.colors.normal))
 		elseif notEnoughMana then
+			self.icon:SetDesaturated(true)
 			self.icon:SetVertexColor(unpack(self.config.colors.mana))
-			--self.NormalTexture:SetVertexColor(0.5, 0.5, 1.0)
 		else
-			self.icon:SetVertexColor(0.4, 0.4, 0.4)
-			--self.NormalTexture:SetVertexColor(1.0, 1.0, 1.0)
+			self.icon:SetDesaturated(self.config.desaturation.unusable)
+			self.icon:SetVertexColor(unpack(self.config.colors.unusable))
 		end
 	end
 
