@@ -123,6 +123,7 @@ end
 
 local DefaultConfig = {
 	outOfRangeColoring = "button",
+	outOfManaColoring = "button",
 	tooltip = "enabled",
 	showGrid = false,
 	colors = {
@@ -1458,9 +1459,7 @@ function OnUpdate(_, elapsed)
 				local oldRange = button.outOfRange
 				button.outOfRange = (inRange == false)
 				if oldRange ~= button.outOfRange then
-					if button.config.outOfRangeColoring == "button" then
-						UpdateUsable(button)
-					elseif button.config.outOfRangeColoring == "hotkey" then
+					if button.config.outOfRangeColoring == "hotkey" then
 						local hotkey = button.HotKey
 						if hotkey:GetText() == RANGE_INDICATOR then
 							hotkey:SetShown(inRange == false)
@@ -1471,6 +1470,7 @@ function OnUpdate(_, elapsed)
 							hotkey:SetVertexColor(unpack(button.config.text.hotkey.color))
 						end
 					end
+					UpdateUsable(button)
 				end
 			end
 		end
@@ -1780,9 +1780,22 @@ function UpdateUsable(self)
 		if isUsable then
 			self.icon:SetDesaturated(false)
 			self.icon:SetVertexColor(unpack(self.config.colors.normal))
+			if not self.outOfRange and self.config.outOfManaColoring == "hotkey" then
+				if self.HotKey:GetText() == RANGE_INDICATOR then
+					self.HotKey:Hide()
+				end
+				self.HotKey:SetVertexColor(unpack(self.config.text.hotkey.color))
+			end
 		elseif notEnoughMana then
-			self.icon:SetDesaturated(true)
-			self.icon:SetVertexColor(unpack(self.config.colors.mana))
+			if self.config.outOfManaColoring == "button" then
+				self.icon:SetDesaturated(true)
+				self.icon:SetVertexColor(unpack(self.config.colors.mana))
+			elseif not self.outOfRange and self.config.outOfManaColoring == "hotkey" then
+				if self.HotKey:GetText() == RANGE_INDICATOR then
+					self.HotKey:Show()
+				end
+				self.HotKey:SetVertexColor(unpack(self.config.colors.mana))
+			end
 		else
 			self.icon:SetDesaturated(self.config.desaturation.unusable)
 			self.icon:SetVertexColor(unpack(self.config.colors.unusable))
