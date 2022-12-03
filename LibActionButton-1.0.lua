@@ -1153,10 +1153,12 @@ function Generic:UpdateConfig(config)
 	-- merge the two configs
 	merge(self.config, config, DefaultConfig)
 
-	if self.config.outOfRangeColoring == "button" then
+	if self.config.outOfRangeColoring == "button" or self.config.outOfManaColoring == "button" then
 		self.HotKey:SetVertexColor(unpack(self.config.text.hotkey.color))
 	end
-	if self.config.outOfRangeColoring == "hotkey" then
+	if self.config.outOfRangeColoring == "hotkey" or self.config.outOfManaColoring == "hotkey" then
+		self.icon:SetDesaturated(false)
+		self.icon:SetVertexColor(unpack(self.config.colors.normal))
 		self.outOfRange = nil
 	end
 
