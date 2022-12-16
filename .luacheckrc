@@ -101,6 +101,7 @@ read_globals = {
 	"SetCVar",
 
 	-- FrameXML API
+	"ActionBarController_UpdateAllSpellHighlights",
 	"ActionButton_HideOverlayGlow",
 	"ActionButton_UpdateFlyout",
 	"CooldownFrame_Set",
