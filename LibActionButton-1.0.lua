@@ -2160,7 +2160,7 @@ else
 			-- based on ActionButton_UpdateFlyout in ActionButton.lua
 			local actionType = GetActionInfo(self._state_action)
 			if actionType == "flyout" then
-				local isMouseOverButton =  GetMouseFocus() == self;
+				local isMouseOverButton = self:IsMouseOver()
 
 				local isButtonDown
 				if (isButtonDownOverride ~= nil) then
