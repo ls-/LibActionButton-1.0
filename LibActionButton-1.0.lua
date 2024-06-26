@@ -29,7 +29,7 @@ SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 
 ]]
 local MAJOR_VERSION = "LibActionButton-1.0-ls"
-local MINOR_VERSION = 114
+local MINOR_VERSION = 117
 
 if not LibStub then error(MAJOR_VERSION .. " requires LibStub.") end
 local lib, oldversion = LibStub:NewLibrary(MAJOR_VERSION, MINOR_VERSION)
@@ -44,6 +44,7 @@ local WoWRetail = (WOW_PROJECT_ID == WOW_PROJECT_MAINLINE)
 local WoWClassic = (WOW_PROJECT_ID == WOW_PROJECT_CLASSIC)
 local WoWBCC = (WOW_PROJECT_ID == WOW_PROJECT_BURNING_CRUSADE_CLASSIC)
 local WoWWrath = (WOW_PROJECT_ID == WOW_PROJECT_WRATH_CLASSIC)
+local WoWCata = (WOW_PROJECT_ID == WOW_PROJECT_CATACLYSM_CLASSIC)
 
 -- Enable custom flyouts for WoW Retail
 local UseCustomFlyout = WoWRetail
@@ -1951,7 +1952,9 @@ function UpdateCooldown(self)
 
 	self.cooldown:SetDrawBling(self.cooldown:GetEffectiveAlpha() > 0.5)
 
-	if (locStart + locDuration) > (start + duration) then
+	local hasLocCooldown = locStart and locDuration and locStart > 0 and locDuration > 0
+	local hasCooldown = enable and start and duration and start > 0 and duration > 0
+	if hasLocCooldown and ((not hasCooldown) or ((locStart + locDuration) > (start + duration))) then
 		if self.cooldown.currentCooldownType ~= COOLDOWN_TYPE_LOSS_OF_CONTROL then
 			self.cooldown:SetEdgeTexture("Interface\\Cooldown\\edge-LoC")
 			self.cooldown:SetSwipeColor(0.17, 0, 0)
@@ -1969,7 +1972,7 @@ function UpdateCooldown(self)
 			self.cooldown:SetHideCountdownNumbers(false)
 			self.cooldown.currentCooldownType = COOLDOWN_TYPE_NORMAL
 		end
-		if locStart > 0 then
+		if hasLocCooldown then
 			self.cooldown:SetScript("OnCooldownDone", OnCooldownDone)
 		end
 
@@ -2264,7 +2267,7 @@ Generic.GetActionText           = function(self) return "" end
 Generic.GetTexture              = function(self) return nil end
 Generic.GetCharges              = function(self) return nil end
 Generic.GetCount                = function(self) return 0 end
-Generic.GetCooldown             = function(self) return 0, 0, 0 end
+Generic.GetCooldown             = function(self) return nil end
 Generic.IsAttack                = function(self) return nil end
 Generic.IsEquipped              = function(self) return nil end
 Generic.IsCurrentlyActive       = function(self) return nil end
@@ -2362,8 +2365,8 @@ local IsSpellInRange = C_Spell and C_Spell.IsSpellInRange or IsSpellInRange
 local GetSpellLossOfControlCooldown = C_Spell and C_Spell.GetSpellLossOfControlCooldown or GetSpellLossOfControlCooldown
 
 -- unwrapped functions that return tables now
-local GetSpellCharges = (C_Spell and C_Spell.GetSpellCharges) and function(spell) local c = C_Spell.GetSpellCharges(spell) return c.currentCharges, c.maxCharges, c.cooldownStartTime, c.cooldownDuration end or GetSpellCharges
-local GetSpellCooldown = (C_Spell and C_Spell.GetSpellCooldown) and function(spell) local c = C_Spell.GetSpellCooldown(spell) return c.startTime, c.duration, c.isEnabled, c.modRate end or GetSpellCooldown
+local GetSpellCharges = (C_Spell and C_Spell.GetSpellCharges) and function(spell) local c = C_Spell.GetSpellCharges(spell) if c then return c.currentCharges, c.maxCharges, c.cooldownStartTime, c.cooldownDuration end end or GetSpellCharges
+local GetSpellCooldown = (C_Spell and C_Spell.GetSpellCooldown) and function(spell) local c = C_Spell.GetSpellCooldown(spell) if c then return c.startTime, c.duration, c.isEnabled, c.modRate end end or GetSpellCooldown
 
 local BOOKTYPE_SPELL = Enum.SpellBookSpellBank and Enum.SpellBookSpellBank.Player or "spell"
 -----------------------------------------------------------
@@ -2423,7 +2426,7 @@ Macro.GetActionText           = function(self) return (GetMacroInfo(self._state_
 Macro.GetTexture              = function(self) return (select(2, GetMacroInfo(self._state_action))) end
 Macro.GetCharges              = function(self) return nil end
 Macro.GetCount                = function(self) return 0 end
-Macro.GetCooldown             = function(self) return 0, 0, 0 end
+Macro.GetCooldown             = function(self) return nil end
 Macro.IsAttack                = function(self) return nil end
 Macro.IsEquipped              = function(self) return nil end
 Macro.IsCurrentlyActive       = function(self) return nil end
@@ -2442,7 +2445,7 @@ Custom.GetActionText           = function(self) return "" end
 Custom.GetTexture              = function(self) return self._state_action.texture end
 Custom.GetCharges              = function(self) return nil end
 Custom.GetCount                = function(self) return 0 end
-Custom.GetCooldown             = function(self) return 0, 0, 0 end
+Custom.GetCooldown             = function(self) return nil end
 Custom.IsAttack                = function(self) return nil end
 Custom.IsEquipped              = function(self) return nil end
 Custom.IsCurrentlyActive       = function(self) return nil end
@@ -2456,7 +2459,7 @@ Custom.RunCustom               = function(self, unit, button) return self._state
 Custom.GetPassiveCooldownSpellID = function(self) return nil end
 
 --- WoW Classic overrides
-if not WoWRetail then
+if not WoWRetail and not WoWCata then
 	UpdateOverlayGlow = function() end
 end
 
