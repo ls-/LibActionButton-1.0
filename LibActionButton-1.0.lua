@@ -29,7 +29,7 @@ SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 
 ]]
 local MAJOR_VERSION = "LibActionButton-1.0"
-local MINOR_VERSION = 118
+local MINOR_VERSION = 119
 
 if not LibStub then error(MAJOR_VERSION .. " requires LibStub.") end
 local lib, oldversion = LibStub:NewLibrary(MAJOR_VERSION, MINOR_VERSION)
@@ -1074,11 +1074,19 @@ function Generic:OnEnter()
 		UpdateNewAction(self)
 	end
 
-	UpdateFlyout(self)
+	if FlyoutButtonMixin then
+		FlyoutButtonMixin.OnEnter(self)
+	else
+		UpdateFlyout(self)
+	end
 end
 
 function Generic:OnLeave()
-	UpdateFlyout(self)
+	if FlyoutButtonMixin then
+		FlyoutButtonMixin.OnLeave(self)
+	else
+		UpdateFlyout(self)
+	end
 
 	if GameTooltip:IsForbidden() then return end
 	GameTooltip:Hide()
