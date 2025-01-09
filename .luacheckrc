@@ -102,7 +102,8 @@ read_globals = {
 	"GameTooltip_SetDefaultAnchor",
 	"SetClampedTextureRotation",
 
-	-- FrameXML Frames
+	-- FrameXML Frames/Mixins
+	"FlyoutButtonMixin",
 	"GameTooltip",
 	"SpellFlyout",
 	"UIParent",
