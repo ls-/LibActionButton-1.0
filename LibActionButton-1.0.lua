@@ -29,7 +29,7 @@ SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 
 ]]
 local MAJOR_VERSION = "LibActionButton-1.0"
-local MINOR_VERSION = 120
+local MINOR_VERSION = 121
 
 if not LibStub then error(MAJOR_VERSION .. " requires LibStub.") end
 local lib, oldversion = LibStub:NewLibrary(MAJOR_VERSION, MINOR_VERSION)
@@ -47,7 +47,7 @@ local WoWWrath = (WOW_PROJECT_ID == WOW_PROJECT_WRATH_CLASSIC)
 local WoWCata = (WOW_PROJECT_ID == WOW_PROJECT_CATACLYSM_CLASSIC)
 
 -- Enable custom flyouts for WoW Retail
-local UseCustomFlyout = WoWRetail or FlyoutButtonMixin
+local UseCustomFlyout = WoWRetail or (FlyoutButtonMixin and not ActionButton_UpdateFlyout)
 
 local KeyBound = LibStub("LibKeyBound-1.0", true)
 local CBH = LibStub("CallbackHandler-1.0")
@@ -1074,7 +1074,7 @@ function Generic:OnEnter()
 		UpdateNewAction(self)
 	end
 
-	if FlyoutButtonMixin then
+	if FlyoutButtonMixin and UseCustomFlyout then
 		FlyoutButtonMixin.OnEnter(self)
 	else
 		UpdateFlyout(self)
@@ -1082,7 +1082,7 @@ function Generic:OnEnter()
 end
 
 function Generic:OnLeave()
-	if FlyoutButtonMixin then
+	if FlyoutButtonMixin and UseCustomFlyout then
 		FlyoutButtonMixin.OnLeave(self)
 	else
 		UpdateFlyout(self)
