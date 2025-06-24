@@ -100,6 +100,7 @@ read_globals = {
 	"ActionButton_UpdateFlyout",
 	"CooldownFrame_Set",
 	"GameTooltip_SetDefaultAnchor",
+	"GetCVarBool",
 	"SetClampedTextureRotation",
 
 	-- FrameXML Frames/Mixins
