@@ -29,7 +29,7 @@ SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 
 ]]
 local MAJOR_VERSION = "LibActionButton-1.0"
-local MINOR_VERSION = 125
+local MINOR_VERSION = 126
 
 if not LibStub then error(MAJOR_VERSION .. " requires LibStub.") end
 local lib, oldversion = LibStub:NewLibrary(MAJOR_VERSION, MINOR_VERSION)
@@ -106,7 +106,7 @@ local type_meta_map = {
 
 local ButtonRegistry, ActiveButtons, ActionButtons, NonActionButtons = lib.buttonRegistry, lib.activeButtons, lib.actionButtons, lib.nonActionButtons
 
-local Update, UpdateButtonState, UpdateUsable, UpdateCount, UpdateCooldown, UpdateCooldownNumberHidden, UpdateTooltip, UpdateNewAction, UpdateSpellHighlight, ClearNewActionHighlight
+local Update, UpdateButtonState, UpdateUsable, UpdateCount, UpdateCooldown, UpdateCooldownNumberHidden, UpdateTooltip, UpdateNewAction, UpdateSpellHighlight, ClearNewActionHighlight, UpdateAssistedCombatRotationFrame
 local StartFlash, StopFlash, UpdateFlash, UpdateHotkeys, UpdateRangeTimer, UpdateOverlayGlow
 local UpdateFlyout, ShowGrid, HideGrid, UpdateGrid, SetupSecureSnippets, WrapOnClick
 local ShowOverlayGlow, HideOverlayGlow
@@ -1285,6 +1285,13 @@ function InitializeEventHandler()
 	if UseCustomFlyout and IsLoggedIn() then
 		DiscoverFlyoutSpells()
 	end
+
+	if EventRegistry and AssistedCombatManager then
+		EventRegistry:RegisterCallback("AssistedCombatManager.OnSetActionSpell", function(o)
+			-- May not be the best way, but it is a unique string which is what the event system cares about
+			OnEvent(lib.eventFrame, "AssistedCombatManager.OnSetActionSpell")
+		end)
+	end
 end
 
 local _lastFormUpdate = GetTime()
@@ -1469,6 +1476,12 @@ function OnEvent(frame, event, arg1, ...)
 		end
 	elseif event == "SPELL_UPDATE_ICON" then
 		ForAllButtons(Update, true)
+	elseif event == "AssistedCombatManager.OnSetActionSpell" then
+		for button in next, ActiveButtons do
+			if button._state_type == "action" then
+				UpdateAssistedCombatRotationFrame(button)
+			end
+		end
 	end
 end
 
@@ -1635,6 +1648,9 @@ function Generic:UpdateAction(force)
 			local meta = type_meta_map[action_type] or type_meta_map.empty
 			setmetatable(self, meta)
 			self._state_type = action_type
+
+			-- set action attribute for action buttons
+			self.action = self._state_type == "action" and action or nil
 		end
 		self._state_action = action
 		Update(self)
@@ -1768,6 +1784,8 @@ function Update(self)
 	UpdateNewAction(self)
 
 	UpdateSpellHighlight(self)
+
+	UpdateAssistedCombatRotationFrame(self)
 
 	if GameTooltip_GetOwnerForbidden() == self then
 		UpdateTooltip(self)
@@ -2133,6 +2151,21 @@ function UpdateSpellHighlight(self)
 	else
 		self.SpellHighlightTexture:Hide()
 		self.SpellHighlightAnim:Stop()
+	end
+end
+
+function UpdateAssistedCombatRotationFrame(self)
+	if not (C_ActionBar and C_ActionBar.IsAssistedCombatAction) then return end
+	local show = self._state_type == "action" and C_ActionBar.IsAssistedCombatAction(self._state_action)
+	local assistedCombatRotationFrame = self.AssistedCombatRotationFrame
+	-- create frame if needed
+	if show and not assistedCombatRotationFrame then
+		assistedCombatRotationFrame = CreateFrame("Frame", nil, self, "ActionBarButtonAssistedCombatRotationTemplate")
+		self.AssistedCombatRotationFrame = assistedCombatRotationFrame
+	end
+
+	if assistedCombatRotationFrame then
+		assistedCombatRotationFrame:UpdateState()
 	end
 end
 
