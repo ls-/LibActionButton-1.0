@@ -1290,7 +1290,7 @@ function InitializeEventHandler()
 		EventRegistry:RegisterCallback("AssistedCombatManager.OnSetActionSpell", function(o)
 			-- May not be the best way, but it is a unique string which is what the event system cares about
 			OnEvent(lib.eventFrame, "AssistedCombatManager.OnSetActionSpell")
-		end)
+		end, lib.eventFrame)
 	end
 end
 
