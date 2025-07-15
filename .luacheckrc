@@ -90,6 +90,7 @@ read_globals = {
 	"PickupMacro",
 	"PickupPetAction",
 	"PickupSpell",
+	"SetActionUIButton",
 	"SetBinding",
 	"SetBindingClick",
 	"SetCVar",

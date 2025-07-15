@@ -29,7 +29,7 @@ SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 
 ]]
 local MAJOR_VERSION = "LibActionButton-1.0"
-local MINOR_VERSION = 127
+local MINOR_VERSION = 128
 
 if not LibStub then error(MAJOR_VERSION .. " requires LibStub.") end
 local lib, oldversion = LibStub:NewLibrary(MAJOR_VERSION, MINOR_VERSION)
@@ -62,6 +62,7 @@ lib.buttonRegistry = lib.buttonRegistry or {}
 lib.activeButtons = lib.activeButtons or {}
 lib.actionButtons = lib.actionButtons or {}
 lib.nonActionButtons = lib.nonActionButtons or {}
+lib.actionButtonsNonUI = lib.actionButtonsNonUI or {}
 
 lib.NumChargeCooldowns = lib.NumChargeCooldowns or 0
 
@@ -103,7 +104,7 @@ local type_meta_map = {
 	custom = Custom_MT
 }
 
-local ButtonRegistry, ActiveButtons, ActionButtons, NonActionButtons = lib.buttonRegistry, lib.activeButtons, lib.actionButtons, lib.nonActionButtons
+local ButtonRegistry, ActiveButtons, ActionButtons, NonActionButtons, ActionButtonsNonUI = lib.buttonRegistry, lib.activeButtons, lib.actionButtons, lib.nonActionButtons, lib.actionButtonsNonUI
 
 local Update, UpdateButtonState, UpdateUsable, UpdateCount, UpdateCooldown, UpdateCooldownNumberHidden, UpdateTooltip, UpdateNewAction, UpdateSpellHighlight, ClearNewActionHighlight, UpdateAssistedCombatRotationFrame
 local StartFlash, StopFlash, UpdateFlash, UpdateHotkeys, UpdateRangeTimer, UpdateOverlayGlow
@@ -142,6 +143,7 @@ local DefaultConfig = {
 	clickOnDown = false,
 	cooldownCount = nil, -- nil: use cvar, true/false: enable/disable
 	flyoutDirection = "UP",
+	actionButtonUI = false, -- register the button with SetActionUIButton, this has some side-effects if the button changes from action type to another type, but is required for certain UI integrations
 	text = {
 		hotkey = {
 			font = {
@@ -1202,7 +1204,7 @@ function Generic:UpdateConfig(config)
 	UpdateTextElements(self)
 	UpdateHotkeys(self)
 	UpdateGrid(self)
-	Update(self)
+	self:UpdateAction(true)
 	if not WoWRetail then
 		self:RegisterForClicks(self.config.clickOnDown and "AnyDown" or "AnyUp")
 	end
@@ -1347,8 +1349,11 @@ function OnEvent(frame, event, arg1, ...)
 		ForAllButtons(UpdateHotkeys)
 	elseif event == "PLAYER_TARGET_CHANGED" then
 		UpdateRangeTimer()
-	elseif (event == "ACTIONBAR_UPDATE_STATE") or
-		((event == "UNIT_ENTERED_VEHICLE" or event == "UNIT_EXITED_VEHICLE") and (arg1 == "player")) or
+	elseif event == "ACTIONBAR_UPDATE_STATE" then
+		for button in next, ActionButtonsNonUI do
+			UpdateButtonState(button)
+		end
+	elseif ((event == "UNIT_ENTERED_VEHICLE" or event == "UNIT_EXITED_VEHICLE") and (arg1 == "player")) or
 		((event == "COMPANION_UPDATE") and (arg1 == "MOUNT")) then
 		ForAllButtons(UpdateButtonState, true)
 	elseif event == "ACTIONBAR_UPDATE_USABLE" then
@@ -1652,6 +1657,9 @@ function Generic:UpdateAction(force)
 
 		-- set action attribute for action buttons
 		self.action = self._state_type == "action" and action or 0
+		if self.config.actionButtonUI then
+			SetActionUIButton(self, self.action, self.cooldown)
+		end
 
 		Update(self)
 	end
@@ -1663,9 +1671,13 @@ function Update(self)
 		if self._state_type == "action" then
 			ActionButtons[self] = true
 			NonActionButtons[self] = nil
+			if not self.config.actionButtonUI then
+				ActionButtonsNonUI[self] = true
+			end
 		else
 			ActionButtons[self] = nil
 			NonActionButtons[self] = true
+			ActionButtonsNonUI[self] = nil
 		end
 		self:SetAlpha(1.0)
 		UpdateButtonState(self)
@@ -1676,6 +1688,7 @@ function Update(self)
 		ActiveButtons[self] = nil
 		ActionButtons[self] = nil
 		NonActionButtons[self] = nil
+		ActionButtonsNonUI[self] = nil
 		if gridCounter == 0 and not self.config.showGrid then
 			self:SetAlpha(0.0)
 		end
