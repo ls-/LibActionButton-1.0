@@ -1647,11 +1647,12 @@ function Generic:UpdateAction(force)
 			local meta = type_meta_map[action_type] or type_meta_map.empty
 			setmetatable(self, meta)
 			self._state_type = action_type
-
-			-- set action attribute for action buttons
-			self.action = self._state_type == "action" and action or nil
 		end
 		self._state_action = action
+
+		-- set action attribute for action buttons
+		self.action = self._state_type == "action" and action or 0
+
 		Update(self)
 	end
 end
