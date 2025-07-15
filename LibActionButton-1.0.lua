@@ -29,7 +29,7 @@ SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 
 ]]
 local MAJOR_VERSION = "LibActionButton-1.0"
-local MINOR_VERSION = 126
+local MINOR_VERSION = 127
 
 if not LibStub then error(MAJOR_VERSION .. " requires LibStub.") end
 local lib, oldversion = LibStub:NewLibrary(MAJOR_VERSION, MINOR_VERSION)
@@ -38,7 +38,7 @@ if not lib then return end
 -- Lua functions
 local type, error, tostring, tonumber, assert, select = type, error, tostring, tonumber, assert, select
 local setmetatable, wipe, unpack, pairs, next = setmetatable, wipe, unpack, pairs, next
-local str_match, format, tinsert, tremove = string.match, format, tinsert, tremove
+local str_match, format = string.match, format
 
 local WoWRetail = (WOW_PROJECT_ID == WOW_PROJECT_MAINLINE)
 local WoWClassic = (WOW_PROJECT_ID == WOW_PROJECT_CLASSIC)
@@ -63,7 +63,6 @@ lib.activeButtons = lib.activeButtons or {}
 lib.actionButtons = lib.actionButtons or {}
 lib.nonActionButtons = lib.nonActionButtons or {}
 
-lib.ChargeCooldowns = lib.ChargeCooldowns or {}
 lib.NumChargeCooldowns = lib.NumChargeCooldowns or 0
 
 lib.FlyoutInfo = lib.FlyoutInfo or {}
@@ -110,7 +109,7 @@ local Update, UpdateButtonState, UpdateUsable, UpdateCount, UpdateCooldown, Upda
 local StartFlash, StopFlash, UpdateFlash, UpdateHotkeys, UpdateRangeTimer, UpdateOverlayGlow
 local UpdateFlyout, ShowGrid, HideGrid, UpdateGrid, SetupSecureSnippets, WrapOnClick
 local ShowOverlayGlow, HideOverlayGlow
-local EndChargeCooldown
+local ClearChargeCooldown
 
 local GetFlyoutHandler
 
@@ -1682,9 +1681,7 @@ function Update(self)
 		self.cooldown:Hide()
 		self:SetChecked(false)
 
-		if self.chargeCooldown then
-			EndChargeCooldown(self.chargeCooldown)
-		end
+		ClearChargeCooldown(self)
 
 		if self.LevelLinkLockIcon then
 			self.LevelLinkLockIcon:SetShown(false)
@@ -1873,48 +1870,44 @@ function UpdateCount(self)
 	end
 end
 
-function EndChargeCooldown(self)
-	self:Hide()
-	self:SetParent(UIParent)
-	self.parent.chargeCooldown = nil
-	self.parent = nil
-	tinsert(lib.ChargeCooldowns, self)
+function ClearChargeCooldown(self)
+	if self.chargeCooldown then
+		CooldownFrame_Clear(self.chargeCooldown)
+	end
+end
+
+local function CreateChargeCooldownFrame(parent)
+	lib.NumChargeCooldowns = lib.NumChargeCooldowns + 1
+	local cooldown = CreateFrame("Cooldown", "LAB10ChargeCooldown"..lib.NumChargeCooldowns, parent, "CooldownFrameTemplate");
+	cooldown:SetHideCountdownNumbers(true)
+	cooldown:SetDrawSwipe(false)
+	cooldown:SetPoint("TOPLEFT", parent.icon, "TOPLEFT", 2, -2)
+	cooldown:SetPoint("BOTTOMRIGHT", parent.icon, "BOTTOMRIGHT", -2, 2)
+	cooldown:SetFrameLevel(parent:GetFrameLevel())
+	return cooldown
 end
 
 local function StartChargeCooldown(parent, chargeStart, chargeDuration, chargeModRate)
-	if not parent.chargeCooldown then
-		local cooldown = tremove(lib.ChargeCooldowns)
-		if not cooldown then
-			lib.NumChargeCooldowns = lib.NumChargeCooldowns + 1
-			cooldown = CreateFrame("Cooldown", "LAB10ChargeCooldown"..lib.NumChargeCooldowns, parent, "CooldownFrameTemplate");
-			cooldown:SetScript("OnCooldownDone", EndChargeCooldown)
-			cooldown:SetHideCountdownNumbers(true)
-			cooldown:SetDrawSwipe(false)
-		end
-		cooldown:SetParent(parent)
-		cooldown:SetAllPoints(parent)
-		cooldown:SetFrameStrata("TOOLTIP")
-		cooldown:Show()
-		parent.chargeCooldown = cooldown
-		cooldown.parent = parent
+	if chargeStart == 0 then
+		ClearChargeCooldown(parent)
+		return
 	end
-	-- set cooldown
-	parent.chargeCooldown:SetDrawBling(parent.chargeCooldown:GetEffectiveAlpha() > 0.5)
+
+	parent.chargeCooldown = parent.chargeCooldown or CreateChargeCooldownFrame(parent)
+
 	CooldownFrame_Set(parent.chargeCooldown, chargeStart, chargeDuration, true, true, chargeModRate)
 
 	-- update charge cooldown skin when masque is used
 	if Masque and Masque.UpdateCharge then
 		Masque:UpdateCharge(parent)
 	end
-
-	if not chargeStart or chargeStart == 0 then
-		EndChargeCooldown(parent.chargeCooldown)
-	end
 end
 
-local function OnCooldownDone(self)
+local function OnCooldownDone(self, requireCooldownUpdate)
 	self:SetScript("OnCooldownDone", nil)
-	UpdateCooldown(self:GetParent())
+	if requireCooldownUpdate then
+		UpdateCooldown(self:GetParent())
+	end
 end
 
 function UpdateCooldownNumberHidden(self)
@@ -1971,10 +1964,10 @@ function UpdateCooldown(self)
 			self.cooldown.currentCooldownType = COOLDOWN_TYPE_LOSS_OF_CONTROL
 			UpdateCooldownNumberHidden(self)
 		end
+
 		CooldownFrame_Set(self.cooldown, locStart, locDuration, true, true, modRate)
-		if self.chargeCooldown then
-			EndChargeCooldown(self.chargeCooldown)
-		end
+		self.cooldown:SetScript("OnCooldownDone", OnCooldownDone, false)
+		ClearChargeCooldown(self)
 	else
 		if self.cooldown.currentCooldownType ~= COOLDOWN_TYPE_NORMAL then
 			self.cooldown:SetEdgeTexture("Interface\\Cooldown\\edge")
@@ -1982,14 +1975,13 @@ function UpdateCooldown(self)
 			self.cooldown.currentCooldownType = COOLDOWN_TYPE_NORMAL
 			UpdateCooldownNumberHidden(self)
 		end
-		if hasLocCooldown then
-			self.cooldown:SetScript("OnCooldownDone", OnCooldownDone)
-		end
+
+		self.cooldown:SetScript("OnCooldownDone", OnCooldownDone, hasLocCooldown)
 
 		if charges and maxCharges and maxCharges > 1 and charges < maxCharges then
 			StartChargeCooldown(self, chargeStart, chargeDuration, chargeModRate)
-		elseif self.chargeCooldown then
-			EndChargeCooldown(self.chargeCooldown)
+		else
+			ClearChargeCooldown(self)
 		end
 		CooldownFrame_Set(self.cooldown, start, duration, enable, false, modRate)
 	end

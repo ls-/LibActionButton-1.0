@@ -99,6 +99,7 @@ read_globals = {
 	"ActionButton_HideOverlayGlow",
 	"ActionButton_UpdateFlyout",
 	"AssistedCombatManager",
+	"CooldownFrame_Clear",
 	"CooldownFrame_Set",
 	"EventRegistry",
 	"GameTooltip_SetDefaultAnchor",
