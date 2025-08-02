@@ -29,7 +29,7 @@ SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 
 ]]
 local MAJOR_VERSION = "LibActionButton-1.0"
-local MINOR_VERSION = 128
+local MINOR_VERSION = 129
 
 if not LibStub then error(MAJOR_VERSION .. " requires LibStub.") end
 local lib, oldversion = LibStub:NewLibrary(MAJOR_VERSION, MINOR_VERSION)
@@ -106,7 +106,7 @@ local type_meta_map = {
 
 local ButtonRegistry, ActiveButtons, ActionButtons, NonActionButtons, ActionButtonsNonUI = lib.buttonRegistry, lib.activeButtons, lib.actionButtons, lib.nonActionButtons, lib.actionButtonsNonUI
 
-local Update, UpdateButtonState, UpdateUsable, UpdateCount, UpdateCooldown, UpdateCooldownNumberHidden, UpdateTooltip, UpdateNewAction, UpdateSpellHighlight, ClearNewActionHighlight, UpdateAssistedCombatRotationFrame
+local Update, UpdateButtonState, UpdateUsable, UpdateCount, UpdateCooldown, UpdateCooldownNumberHidden, UpdateTooltip, UpdateNewAction, UpdateSpellHighlight, ClearNewActionHighlight, UpdateAssistedCombatRotationFrame, UpdatedAssistedHighlightFrame
 local StartFlash, StopFlash, UpdateFlash, UpdateHotkeys, UpdateRangeTimer, UpdateOverlayGlow
 local UpdateFlyout, ShowGrid, HideGrid, UpdateGrid, SetupSecureSnippets, WrapOnClick
 local ShowOverlayGlow, HideOverlayGlow
@@ -143,7 +143,8 @@ local DefaultConfig = {
 	clickOnDown = false,
 	cooldownCount = nil, -- nil: use cvar, true/false: enable/disable
 	flyoutDirection = "UP",
-	actionButtonUI = false, -- register the button with SetActionUIButton, this has some side-effects if the button changes from action type to another type, but is required for certain UI integrations
+	actionButtonUI = false, -- register the button with SetActionUIButton, this has some side-effects if the button changes from action type to another type, but is required for certain UI integrations. Recommended to only set on pure type=action buttons
+	assistedHighlight = true, -- requires actionButtonUI to be set to work
 	text = {
 		hotkey = {
 			font = {
@@ -1292,6 +1293,14 @@ function InitializeEventHandler()
 			-- May not be the best way, but it is a unique string which is what the event system cares about
 			OnEvent(lib.eventFrame, "AssistedCombatManager.OnSetActionSpell")
 		end, lib.eventFrame)
+
+		EventRegistry:RegisterCallback("AssistedCombatManager.OnAssistedHighlightSpellChange", function(o)
+			OnEvent(lib.eventFrame, "AssistedCombatManager.OnAssistedHighlightSpellChange")
+		end, lib.eventFrame)
+
+		EventRegistry:RegisterCallback("AssistedCombatManager.OnSetUseAssistedHighlight", function(o)
+			OnEvent(lib.eventFrame, "AssistedCombatManager.OnAssistedHighlightSpellChange")
+		end, lib.eventFrame)
 	end
 end
 
@@ -1485,6 +1494,10 @@ function OnEvent(frame, event, arg1, ...)
 			if button._state_type == "action" then
 				UpdateAssistedCombatRotationFrame(button)
 			end
+		end
+	elseif event == "AssistedCombatManager.OnAssistedHighlightSpellChange" then
+		for button in next, ActiveButtons do
+			UpdatedAssistedHighlightFrame(button)
 		end
 	end
 end
@@ -1797,6 +1810,8 @@ function Update(self)
 	UpdateSpellHighlight(self)
 
 	UpdateAssistedCombatRotationFrame(self)
+
+	UpdatedAssistedHighlightFrame(self)
 
 	if GameTooltip_GetOwnerForbidden() == self then
 		UpdateTooltip(self)
@@ -2169,6 +2184,34 @@ function UpdateAssistedCombatRotationFrame(self)
 
 	if assistedCombatRotationFrame then
 		assistedCombatRotationFrame:UpdateState()
+	end
+end
+
+function UpdatedAssistedHighlightFrame(self)
+	if not AssistedCombatManager then return end
+	local spellID = AssistedCombatManager.lastNextCastSpellID
+	local shown = self.config.actionButtonUI and self.config.assistedHighlight and self:GetSpellId() == spellID
+
+	local highlightFrame = self.AssistedCombatHighlightFrame
+	if shown then
+		if not highlightFrame then
+			highlightFrame = CreateFrame("FRAME", nil, self, "ActionBarButtonAssistedCombatHighlightTemplate")
+			self.AssistedCombatHighlightFrame = highlightFrame
+			highlightFrame:SetPoint("CENTER")
+			-- increase frame level so that its above other overlays (eg. proc highlight)
+			highlightFrame:SetFrameLevel(self:GetFrameLevel() + 10)
+			-- have to do this to get a single frame of the flipbook instead of the whole texture
+			highlightFrame.Flipbook.Anim:Play()
+			highlightFrame.Flipbook.Anim:Stop()
+		end
+		highlightFrame:Show()
+		if AssistedCombatManager.affectingCombat then
+			highlightFrame.Flipbook.Anim:Play()
+		else
+			highlightFrame.Flipbook.Anim:Stop()
+		end
+	elseif highlightFrame then
+		highlightFrame:Hide()
 	end
 end
 
