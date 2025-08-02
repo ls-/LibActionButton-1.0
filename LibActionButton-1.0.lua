@@ -29,7 +29,7 @@ SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 
 ]]
 local MAJOR_VERSION = "LibActionButton-1.0"
-local MINOR_VERSION = 129
+local MINOR_VERSION = 130
 
 if not LibStub then error(MAJOR_VERSION .. " requires LibStub.") end
 local lib, oldversion = LibStub:NewLibrary(MAJOR_VERSION, MINOR_VERSION)
@@ -2190,7 +2190,7 @@ end
 function UpdatedAssistedHighlightFrame(self)
 	if not AssistedCombatManager then return end
 	local spellID = AssistedCombatManager.lastNextCastSpellID
-	local shown = self.config.actionButtonUI and self.config.assistedHighlight and self:GetSpellId() == spellID
+	local shown = self.config.actionButtonUI and self.config.assistedHighlight and spellID and self:GetSpellId() == spellID
 
 	local highlightFrame = self.AssistedCombatHighlightFrame
 	if shown then
