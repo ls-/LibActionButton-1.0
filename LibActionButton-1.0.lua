@@ -2210,6 +2210,8 @@ function UpdateAssistedCombatRotationFrame(self)
 	if show and not assistedCombatRotationFrame then
 		assistedCombatRotationFrame = CreateFrame("Frame", nil, self, "ActionBarButtonAssistedCombatRotationTemplate")
 		self.AssistedCombatRotationFrame = assistedCombatRotationFrame
+
+		lib.callbacks:Fire("OnAssistedCombatRotationFrameCreated", self)
 	end
 
 	if assistedCombatRotationFrame then
@@ -2233,6 +2235,8 @@ function UpdatedAssistedHighlightFrame(self)
 			-- have to do this to get a single frame of the flipbook instead of the whole texture
 			highlightFrame.Flipbook.Anim:Play()
 			highlightFrame.Flipbook.Anim:Stop()
+
+			lib.callbacks:Fire("OnAssistedCombatHighlightFrameCreated", self)
 		end
 		highlightFrame:Show()
 		if AssistedCombatManager.affectingCombat then
