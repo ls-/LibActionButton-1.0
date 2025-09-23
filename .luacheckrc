@@ -28,6 +28,7 @@ read_globals = {
 	"C_Item",
 	"C_LevelLink",
 	"C_Spell",
+	"C_SpellActivationOverlay",
 	"C_SpellBook",
 	"C_UnitAuras",
 
