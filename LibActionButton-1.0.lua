@@ -29,7 +29,7 @@ SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 
 ]]
 local MAJOR_VERSION = "LibActionButton-1.0"
-local MINOR_VERSION = 132
+local MINOR_VERSION = 133
 
 if not LibStub then error(MAJOR_VERSION .. " requires LibStub.") end
 local lib, oldversion = LibStub:NewLibrary(MAJOR_VERSION, MINOR_VERSION)
@@ -2209,7 +2209,7 @@ function SpellVFX_PlayTargettingReticleAnim(self)
 	if self.InterruptDisplay:IsShown() then
 		self.InterruptDisplay:Hide()
 	end
-	if not C_ActionBar.IsAssistedCombatAction(self.action) then
+	if not self._state_type == "action" or not C_ActionBar.IsAssistedCombatAction(self._state_action) then
 		self.TargetReticleAnimFrame:Setup()
 	end
 end
