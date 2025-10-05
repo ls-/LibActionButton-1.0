@@ -2192,7 +2192,11 @@ end
 function SpellVFX_PlaySpellCastAnim(self, actionButtonCastType)
 	if not self.config.spellCastVFX then return end
 
+	-- __Swipe_Hook is to stop Masque from re-setting it
+	self.cooldown.__Swipe_Hook = true
 	self.cooldown:SetSwipeColor(0, 0, 0, 0)
+	self.cooldown.__Swipe_Hook = nil
+
 	SpellVFX_ClearInterruptDisplay(self)
 	SpellVFX_ClearReticle(self)
 	self.SpellCastAnimFrame:Setup(actionButtonCastType)
